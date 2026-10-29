@@ -8,6 +8,7 @@ import 'screens/services_screen.dart';
 import 'screens/work_screen.dart';
 import 'theme/app_theme.dart';
 import 'widgets/mf_logo.dart';
+import 'widgets/pill_nav_bar.dart';
 
 void main() => runApp(const MasterFabricApp());
 
@@ -74,30 +75,15 @@ class _RootShellState extends State<RootShell> {
         ],
       ),
       body: IndexedStack(index: _index, children: pages),
-      bottomNavigationBar: NavigationBar(
+      extendBody: true,
+      bottomNavigationBar: PillNavBar(
         selectedIndex: _index,
-        onDestinationSelected: _goTo,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'Home',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.auto_awesome_outlined),
-            selectedIcon: Icon(Icons.auto_awesome),
-            label: 'Services',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.workspaces_outline),
-            selectedIcon: Icon(Icons.workspaces),
-            label: 'Work',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.mail_outline_rounded),
-            selectedIcon: Icon(Icons.mail_rounded),
-            label: 'Contact',
-          ),
+        onSelected: _goTo,
+        items: const [
+          PillNavItem(icon: Icons.home_outlined, selectedIcon: Icons.home_rounded, label: 'Home'),
+          PillNavItem(icon: Icons.auto_awesome_outlined, selectedIcon: Icons.auto_awesome, label: 'Services'),
+          PillNavItem(icon: Icons.workspaces_outline, selectedIcon: Icons.workspaces, label: 'Work'),
+          PillNavItem(icon: Icons.mail_outline_rounded, selectedIcon: Icons.mail_rounded, label: 'Contact'),
         ],
       ),
     );
