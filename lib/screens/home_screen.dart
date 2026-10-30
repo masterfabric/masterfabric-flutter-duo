@@ -14,7 +14,9 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: EdgeInsets.only(bottom: MediaQuery.paddingOf(context).bottom + 24),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 24,
+      ),
       children: [
         _Hero(onNavigate: onNavigate),
         const Gap(28),
@@ -73,7 +75,9 @@ class _Hero extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: () => onNavigate(3),
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size.fromHeight(50),
+                  ),
                   child: const Text('Start your project'),
                 ),
               ),
@@ -123,21 +127,31 @@ class _HighlightTile extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Icon(feature.icon, color: MfColors.blue600, size: 22),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  feature.title,
-                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  feature.body,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12, color: MfColors.slate500),
-                ),
-              ],
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    feature.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    feature.body,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: MfColors.slate500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -177,14 +191,16 @@ class _ClaudePartner extends StatelessWidget {
             ),
             const Gap(14),
             Text.rich(
-              const TextSpan(children: [
-                TextSpan(text: 'We are a '),
-                TextSpan(
-                  text: 'Claude Partner Network',
-                  style: TextStyle(color: MfColors.claude),
-                ),
-                TextSpan(text: ' partner'),
-              ]),
+              const TextSpan(
+                children: [
+                  TextSpan(text: 'We are a '),
+                  TextSpan(
+                    text: 'Claude Partner Network',
+                    style: TextStyle(color: MfColors.claude),
+                  ),
+                  TextSpan(text: ' partner'),
+                ],
+              ),
               style: t.headlineSmall?.copyWith(color: MfColors.claudeInk),
             ),
             const Gap(10),
@@ -252,52 +268,90 @@ class _ClaudeCodeTerminal extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
                   child: Row(
                     children: [
-                      for (final c in const [Color(0xFFFF5F57), Color(0xFFFEBC2E), Color(0xFF28C840)])
+                      for (final c in const [
+                        Color(0xFFFF5F57),
+                        Color(0xFFFEBC2E),
+                        Color(0xFF28C840),
+                      ])
                         Container(
                           width: 10,
                           height: 10,
                           margin: const EdgeInsets.only(right: 6),
-                          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                          decoration: BoxDecoration(
+                            color: c,
+                            shape: BoxShape.circle,
+                          ),
                         ),
                       const SizedBox(width: 8),
-                      Text('~/bank-core — claude', style: mono.copyWith(color: MfColors.slate400, fontSize: 11.5)),
+                      Text(
+                        '~/bank-core — claude',
+                        style: mono.copyWith(
+                          color: MfColors.slate400,
+                          fontSize: 11.5,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-                Container(height: 1, color: Colors.white.withValues(alpha: 0.08)),
+                Container(
+                  height: 1,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
                 Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text.rich(
-                        TextSpan(children: [
-                          const TextSpan(text: '✻ ', style: TextStyle(color: MfColors.claude)),
-                          const TextSpan(text: 'Welcome to '),
-                          TextSpan(
-                            text: 'Claude Code',
-                            style: mono.copyWith(fontWeight: FontWeight.w700, color: Colors.white),
-                          ),
-                        ]),
+                        TextSpan(
+                          children: [
+                            const TextSpan(
+                              text: '✻ ',
+                              style: TextStyle(color: MfColors.claude),
+                            ),
+                            const TextSpan(text: 'Welcome to '),
+                            TextSpan(
+                              text: 'Claude Code',
+                              style: mono.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
                         style: mono,
                       ),
                       const SizedBox(height: 8),
-                      Text('> fintech · engineer in the loop', style: mono.copyWith(color: MfColors.slate400)),
+                      Text(
+                        '> fintech · engineer in the loop',
+                        style: mono.copyWith(color: MfColors.slate400),
+                      ),
                       const SizedBox(height: 8),
                       for (final line in const [
                         ['1 Plan', 'The brief becomes a task in Claude Code.'],
-                        ['2 Build', 'Claude Code drafts the diff in the working tree.'],
-                        ['3 Prove', 'Tests and checks run in that same session.'],
+                        [
+                          '2 Build',
+                          'Claude Code drafts the diff in the working tree.',
+                        ],
+                        [
+                          '3 Prove',
+                          'Tests and checks run in that same session.',
+                        ],
                         ['4 Review', 'An engineer accepts the diff.'],
                       ])
                         Text.rich(
-                          TextSpan(children: [
-                            TextSpan(
-                              text: '${line[0].padRight(9)} ',
-                              style: const TextStyle(color: MfColors.claude, fontWeight: FontWeight.w700),
-                            ),
-                            TextSpan(text: line[1]),
-                          ]),
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: '${line[0].padRight(9)} ',
+                                style: const TextStyle(
+                                  color: MfColors.claude,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              TextSpan(text: line[1]),
+                            ],
+                          ),
                           style: mono,
                         ),
                     ],
@@ -313,7 +367,11 @@ class _ClaudeCodeTerminal extends StatelessWidget {
               children: [
                 const Padding(
                   padding: EdgeInsets.only(top: 2),
-                  child: Icon(Icons.check_circle_rounded, size: 20, color: MfColors.blue600),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    size: 20,
+                    color: MfColors.blue600,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -352,9 +410,15 @@ class _AiFirst extends StatelessWidget {
             body: SiteContent.aiFirstBody,
           ),
           const Gap(18),
-          for (final f in SiteContent.aiFirst) ...[FeatureCard(f), const Gap(10)],
+          for (final f in SiteContent.aiFirst) ...[
+            FeatureCard(f),
+            const Gap(10),
+          ],
           const Gap(8),
-          Text('We deliver AI-first and agentic solutions across sectors', style: t.titleMedium),
+          Text(
+            'We deliver AI-first and agentic solutions across sectors',
+            style: t.titleMedium,
+          ),
           const Gap(12),
           const TagWrap(SiteContent.sectors),
         ],
@@ -382,9 +446,16 @@ class _StartProjectCta extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Eyebrow('Start a project', color: Colors.white, background: Color(0x22FFFFFF)),
+            const Eyebrow(
+              'Start a project',
+              color: Colors.white,
+              background: Color(0x22FFFFFF),
+            ),
             const Gap(14),
-            Text('Ready to start your project?', style: t.headlineSmall?.copyWith(color: Colors.white)),
+            Text(
+              'Ready to start your project?',
+              style: t.headlineSmall?.copyWith(color: Colors.white),
+            ),
             const Gap(10),
             Text(
               'Custom software and AI transformation for institutions and private clients. '
@@ -392,15 +463,12 @@ class _StartProjectCta extends StatelessWidget {
               style: t.bodyMedium?.copyWith(color: MfColors.slate400),
             ),
             const Gap(16),
-            const TagWrap(
-              [
-                'Planned around your brief',
-                'Built with Claude in the loop',
-                'Reviewed by engineers',
-                'Software you own',
-              ],
-              dark: true,
-            ),
+            const TagWrap([
+              'Planned around your brief',
+              'Built with Claude in the loop',
+              'Reviewed by engineers',
+              'Software you own',
+            ], dark: true),
             const Gap(20),
             FilledButton(
               onPressed: () => onNavigate(3),
