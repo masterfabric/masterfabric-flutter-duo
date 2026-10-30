@@ -51,3 +51,24 @@ app.*.map.json
 *.log
 *.tgz
 *.zip
+
+# iOS / macOS CocoaPods and Xcode user data
+**/Pods/
+**/xcuserdata/
+*.xcuserstate
+
+# Secrets and signing material
+.env
+.env.*
+*.env
+*.p8
+*.p12
+*.pem
+*.key
+*.jks
+*.keystore
+*.mobileprovision
+*.cer
+key.properties
+**/GoogleService-Info.plist
+**/google-services.json
