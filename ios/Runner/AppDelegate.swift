@@ -90,24 +90,25 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
 
   // MARK: Native tab bar (iPhone Duo vertical bar)
 
-  private lazy var tabOverlay = NativeTabOverlay { [weak self] index in
+  private lazy var tabOverlay = NativeSideTabs { [weak self] index in
     self?.channel.invokeMethod("tabSelected", arguments: index)
   }
 
-  /// Native iOS tab bar for the closed (outer) display. The
-  /// FlutterViewController stays the window root (swapping in a
-  /// UITabBarController blanked the screen on the Duo sim), and a real
-  /// `UITabBar` is overlaid at the bottom of the Flutter view, inside its
-  /// safe area, clear of the system vertical bar. Dart sends the tabs, the
-  /// selection and visibility; taps come back as `tabSelected`. Returns
-  /// whether the bar is showing.
+  /// Native side navbar for the closed (outer) display, per the HIG
+  /// "Designing for iPhone Duo": tab bars move to the side, into the vertical
+  /// bar with the status bar and camera, on `verticalBarEdge`. The
+  /// FlutterViewController stays the window root (swapping the root blanked
+  /// the screen); the bar lives in the side safe-area strip so content never
+  /// sits under it. Dart sends tabs / selection / visibility; taps come back
+  /// as `tabSelected`. Returns whether the bar is showing.
   private func setTabs(_ args: [String: Any]) -> Bool {
     guard let view = flutterView else { return false }
     let tabs = (args["tabs"] as? [[String: Any]] ?? []).map {
       ($0["title"] as? String ?? "", $0["symbol"] as? String ?? "circle")
     }
+    guard let vc = registrar?.viewController else { return false }
     return tabOverlay.apply(
-      on: view, tabs: tabs, selected: args["selected"] as? Int ?? 0,
+      on: view, owner: vc, tabs: tabs, selected: args["selected"] as? Int ?? 0,
       visible: args["visible"] as? Bool ?? false)
   }
 
@@ -151,59 +152,220 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
   }
 }
 
-/// A real `UITabBar` pinned to the bottom of the host view's safe area.
-final class NativeTabOverlay: NSObject, UITabBarDelegate {
-  static let barHeight: CGFloat = 49
+/// Side navbar living in the vertical-bar strip (the side safe-area inset).
+/// Prefers the system: a child `UITabBarController` sized to the strip, which
+/// UIKit lays out vertically on iPhone Duo. If UIKit doesn't lay its bar out
+/// vertically there, a native vertical bar (SF Symbol + title items, below
+/// the camera / status bar) is used instead.
+final class NativeSideTabs: NSObject {
   private let onSelect: (Int) -> Void
-  private var bar: UITabBar?
-  private var signature: [String] = []
+  private weak var host: UIView?
+  private var system: UIViewController?
+  private var custom: VerticalTabBar?
+  private var useCustom = false
+  private var tabs: [(String, String)] = []
+  private var selected = 0
+  private var visible = false
   private var observation: NSKeyValueObservation?
 
   init(onSelect: @escaping (Int) -> Void) { self.onSelect = onSelect }
 
-  func apply(on host: UIView, tabs: [(String, String)], selected: Int, visible: Bool)
-    -> Bool
-  {
-    let bar = self.bar ?? makeBar(on: host)
+  func apply(
+    on host: UIView, owner: UIViewController, tabs: [(String, String)],
+    selected: Int, visible: Bool
+  ) -> Bool {
+    if self.host !== host {
+      self.host = host
+      observation = host.observe(\.bounds, options: [.new]) { [weak self] _, _ in
+        DispatchQueue.main.async { self?.layout() }
+      }
+    }
+    self.tabs = tabs
+    self.selected = selected
+    self.visible = visible && !tabs.isEmpty
+    if !useCustom, system == nil, #available(iOS 18.0, *) {
+      let controller = SideTabBarController { [weak self] i in
+        self?.selected = i
+        self?.onSelect(i)
+      }
+      owner.addChild(controller)
+      host.addSubview(controller.view)
+      controller.didMove(toParent: owner)
+      system = controller
+    }
+    layout()
+    return self.visible && strip(in: host) != nil
+  }
+
+  /// The side strip UIKit reserves for its vertical bar (larger side inset).
+  private func strip(in host: UIView) -> (CGRect, Bool)? {
+    let safe = host.safeAreaInsets
+    let b = host.bounds
+    if safe.right >= 44, safe.right >= safe.left {
+      return (CGRect(x: b.width - safe.right, y: 0, width: safe.right, height: b.height), false)
+    }
+    if safe.left >= 44 {
+      return (CGRect(x: 0, y: 0, width: safe.left, height: b.height), true)
+    }
+    return nil
+  }
+
+  private func layout() {
+    guard let host else { return }
+    let area = strip(in: host)
+    let show = visible && area != nil
+    if #available(iOS 18.0, *), !useCustom, let controller = system as? SideTabBarController {
+      controller.view.isHidden = !show
+      guard show, let (rect, _) = area else { return }
+      if controller.view.frame != rect { controller.view.frame = rect }
+      controller.configure(tabs: tabs, selected: selected)
+      host.bringSubviewToFront(controller.view)
+      controller.view.layoutIfNeeded()
+      let bar = controller.tabBar.convert(controller.tabBar.bounds, to: controller.view)
+      if bar.height > bar.width, controller.view.bounds.intersects(bar), !controller.isTabBarHidden {
+        return  // system vertical bar is in place
+      }
+      // UIKit didn't put its bar on the vertical axis here: use our own.
+      controller.willMove(toParent: nil)
+      controller.view.removeFromSuperview()
+      controller.removeFromParent()
+      system = nil
+      useCustom = true
+    }
+    let bar = custom ?? {
+      let bar = VerticalTabBar { [weak self] i in
+        self?.selected = i
+        self?.custom?.select(i)
+        self?.onSelect(i)
+      }
+      host.addSubview(bar)
+      custom = bar
+      return bar
+    }()
+    bar.isHidden = !show
+    guard show, let (rect, _) = area else { return }
+    var top = host.safeAreaInsets.top
+    if #available(iOS 27.1, *) {
+      for r in host.reservedRegions(kind: .occlusion) where r.frame.intersects(rect) {
+        top = max(top, r.frame.maxY)
+      }
+    }
+    bar.frame = CGRect(
+      x: rect.minX, y: top, width: rect.width,
+      height: max(0, rect.maxY - host.safeAreaInsets.bottom - top))
+    bar.setTabs(tabs, selected: selected)
+    host.bringSubviewToFront(bar)
+  }
+}
+
+/// System tab bar controller used only for its bar; content is see-through
+/// and non-interactive so the Flutter view underneath stays in charge.
+@available(iOS 18.0, *)
+final class SideTabBarController: UITabBarController, UITabBarControllerDelegate {
+  private let onSelect: (Int) -> Void
+  private var signature: [String] = []
+
+  init(onSelect: @escaping (Int) -> Void) {
+    self.onSelect = onSelect
+    super.init(nibName: nil, bundle: nil)
+    delegate = self
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    view.backgroundColor = .clear
+  }
+
+  func configure(tabs specs: [(String, String)], selected: Int) {
+    let sig = specs.map { "\($0.0)|\($0.1)" }
+    if sig != signature {
+      signature = sig
+      setTabs(
+        specs.enumerated().map { i, spec in
+          UITab(
+            title: spec.0, image: UIImage(systemName: spec.1),
+            identifier: "mf.tab.\(i)"
+          ) { _ in
+            let vc = UIViewController()
+            vc.view.backgroundColor = .clear
+            vc.view.isUserInteractionEnabled = false
+            return vc
+          }
+        }, animated: false)
+    }
+    if tabs.indices.contains(selected), selectedTab !== tabs[selected] {
+      selectedTab = tabs[selected]
+    }
+  }
+
+  func tabBarController(
+    _ tabBarController: UITabBarController, didSelectTab selectedTab: UITab,
+    previousTab: UITab?
+  ) {
+    if let index = tabs.firstIndex(where: { $0 === selectedTab }) { onSelect(index) }
+  }
+}
+
+/// Native vertical tab bar: SF Symbol over a short title per item, 44pt+
+/// targets, stacked from the top of the strip (below the camera and status
+/// bar), tinted like the system tab bar.
+final class VerticalTabBar: UIView {
+  private let onSelect: (Int) -> Void
+  private let stack = UIStackView()
+  private var signature: [String] = []
+
+  init(onSelect: @escaping (Int) -> Void) {
+    self.onSelect = onSelect
+    super.init(frame: .zero)
+    stack.axis = .vertical
+    stack.alignment = .fill
+    stack.spacing = 4
+    stack.translatesAutoresizingMaskIntoConstraints = false
+    addSubview(stack)
+    NSLayoutConstraint.activate([
+      stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+      stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 4),
+      stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -4),
+    ])
+  }
+
+  required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+  func setTabs(_ tabs: [(String, String)], selected: Int) {
     let sig = tabs.map { "\($0.0)|\($0.1)" }
     if sig != signature {
       signature = sig
-      bar.items = tabs.enumerated().map { i, t in
-        UITabBarItem(title: t.0, image: UIImage(systemName: t.1), tag: i)
+      stack.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      for (i, t) in tabs.enumerated() {
+        var config = UIButton.Configuration.plain()
+        config.image = UIImage(systemName: t.1)
+        config.preferredSymbolConfigurationForImage = .init(pointSize: 20, weight: .medium)
+        config.imagePlacement = .top
+        config.imagePadding = 4
+        config.contentInsets = .init(top: 8, leading: 0, bottom: 8, trailing: 0)
+        var title = AttributedString(t.0)
+        title.font = .systemFont(ofSize: 10, weight: .semibold)
+        config.attributedTitle = title
+        config.titleLineBreakMode = .byTruncatingTail
+        let button = UIButton(configuration: config)
+        button.tag = i
+        button.accessibilityLabel = t.0
+        button.heightAnchor.constraint(greaterThanOrEqualToConstant: 56).isActive = true
+        button.addAction(UIAction { [weak self] _ in self?.onSelect(i) }, for: .primaryActionTriggered)
+        stack.addArrangedSubview(button)
       }
     }
-    if let items = bar.items, items.indices.contains(selected) {
-      bar.selectedItem = items[selected]
+    select(selected)
+  }
+
+  func select(_ index: Int) {
+    for case let button as UIButton in stack.arrangedSubviews {
+      let on = button.tag == index
+      button.tintColor = on ? .tintColor : .secondaryLabel
+      button.isSelected = on
+      button.accessibilityTraits = on ? [.button, .selected] : .button
     }
-    let show = visible && !(bar.items ?? []).isEmpty
-    bar.isHidden = !show
-    layout(bar, in: host)
-    return show
-  }
-
-  private func makeBar(on host: UIView) -> UITabBar {
-    let bar = UITabBar()
-    bar.delegate = self
-    bar.isHidden = true
-    host.addSubview(bar)
-    self.bar = bar
-    observation = host.observe(\.bounds, options: [.new]) { [weak self, weak bar] host, _ in
-      guard let self, let bar else { return }
-      DispatchQueue.main.async { self.layout(bar, in: host) }
-    }
-    return bar
-  }
-
-  private func layout(_ bar: UITabBar, in host: UIView) {
-    let safe = host.safeAreaInsets
-    let height = Self.barHeight + safe.bottom
-    bar.frame = CGRect(
-      x: safe.left, y: host.bounds.height - height,
-      width: max(0, host.bounds.width - safe.left - safe.right), height: height)
-    host.bringSubviewToFront(bar)
-  }
-
-  func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
-    onSelect(item.tag)
   }
 }

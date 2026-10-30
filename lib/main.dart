@@ -198,19 +198,13 @@ class _RootShellState extends State<RootShell> {
   Widget _single(FoldInfo fold) {
     // Native UIKit tab bar is the navigation: no Flutter rail / pill.
     if (DuoBridge.instance.nativeTabsShown) {
-      // Closed Duo: the native UITabBar (overlaid by the platform channel)
-      // is the only navigation; leave room for it under the content.
-      final mq = MediaQuery.of(context);
-      return MediaQuery(
-        data: mq.copyWith(
-          padding: mq.padding.copyWith(
-            bottom: mq.padding.bottom + kNativeTabBarHeight,
-          ),
-        ),
-        child: Scaffold(
-          appBar: AppBar(titleSpacing: 20, title: const MfWordmark()),
-          body: _contentStack,
-        ),
+      // Closed Duo: the native side navbar (platform channel) in the
+      // system's vertical bar is the only navigation. It lives in the side
+      // safe area, which the content already insets by, so nothing sits
+      // under it and the content keeps scrolling.
+      return Scaffold(
+        appBar: AppBar(titleSpacing: 20, title: const MfWordmark()),
+        body: _contentStack,
       );
     }
     // iPhone Duo outer display (and other displays where the system puts

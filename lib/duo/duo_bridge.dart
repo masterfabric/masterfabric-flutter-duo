@@ -6,9 +6,6 @@ import 'package:flutter/widgets.dart';
 
 import 'fold_info.dart';
 
-/// Height of the native UITabBar overlay (above the bottom safe area).
-const double kNativeTabBarHeight = 49;
-
 /// Listens to the native `masterfabric/duo` channel (see ios/Runner/AppDelegate.swift).
 ///
 /// Re-queries whenever the window metrics change (fold/unfold resizes the
