@@ -17,6 +17,8 @@
 
 This is the mobile version of [masterfabric.co](https://masterfabric.co), built in Flutter and designed for **iPhone Duo**, Apple's foldable iPhone. It follows Apple's [Human Interface Guidelines for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo) and uses the real iOS 27.1 APIs (`UIHingeInteraction`, `UIView.reservedRegions`, `UITraitCollection.verticalBarEdge` and the system vertical tab bar) through a small platform channel.
 
+> **Platform:** iOS only. The project ships just the `ios/` runner and targets iPhone Duo on iOS 27.1; Android, web and desktop runners were removed on purpose.
+
 You can use it as a reference for:
 
 - adapting one Flutter codebase to every iPhone Duo posture: closed, book, flat and tabletop;
@@ -289,13 +291,13 @@ flutter test      # widget + Duo layout + cubit tests
 
   Once that lands, `DualPaneGeometry` already prefers `DisplayFeature`s, and the channel remains for the native tab bar.
 - The side tab bar is UIKit, layered over the Flutter view. Its look follows the system, not the Flutter theme.
-- The posture screenshots above are from the simulator's outer display. The inner, open-display captures still need Device Hub to open the simulator.
-- iOS only. Other platforms fall back to breakpoints and the pill bar.
+- The still screenshots above are from the outer (closed) display; the demo GIF at the top shows the unfold and the split view on the inner display.
+- iOS only by design: there are no Android, web or desktop runners. In widget tests (no native channel), the layout falls back to breakpoints and the pill bar.
 
 ## Roadmap
 
 - [ ] Drop the custom geometry path when flutter/flutter#193025 ships, and keep the channel for the bars only.
-- [ ] Inner-display (book, flat and tabletop) screenshots and golden tests.
+- [ ] Golden tests for the inner-display postures (book, flat and tabletop).
 - [ ] A native vertical **toolbar** (`UIBarButtonItemVisibilityPriority`, overflow) for section actions.
 - [ ] Extract `masterfabric/duo` into a reusable Flutter plugin package (`masterfabric_duo`).
 - [ ] Localization (slang) and hydrated state, as in masterfabric_core.
