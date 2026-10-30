@@ -1,5 +1,18 @@
 # MasterFabric Flutter Duo
 
+<p align="center">
+  <img src="docs/screenshots/duo_demo.gif" width="420" alt="MasterFabric Flutter Duo demo on iPhone Duo">
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/iOS-27.1-000000?logo=apple&logoColor=white" alt="iOS 27.1">
+  <img src="https://img.shields.io/badge/device-iPhone%20Duo-5E5CE6" alt="iPhone Duo">
+  <img src="https://img.shields.io/badge/state-flutter__bloc-13B9FD" alt="flutter_bloc">
+</p>
+
+<p align="center"><sub>One Flutter codebase that follows the fold: the closed display with the native side tab bar, then unfolded into a split view on the inner display.</sub></p>
+
 **Building Flutter products for iPhone Duo devices.**
 
 This is the mobile version of [masterfabric.co](https://masterfabric.co), built in Flutter and designed for **iPhone Duo**, Apple's foldable iPhone. It follows Apple's [Human Interface Guidelines for iPhone Duo](https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo) and uses the real iOS 27.1 APIs (`UIHingeInteraction`, `UIView.reservedRegions`, `UITraitCollection.verticalBarEdge` and the system vertical tab bar) through a small platform channel.
