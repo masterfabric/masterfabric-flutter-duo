@@ -38,6 +38,7 @@ You can use it as a reference for:
 ## Contents
 
 - [Features by posture](#features-by-posture)
+- [iPhone Duo design in pictures](#iphone-duo-design-in-pictures)
 - [Apple documentation map](#apple-documentation-map)
 - [Architecture](#architecture)
 - [State management](#state-management)
@@ -53,6 +54,12 @@ You can use it as a reference for:
 
 The app always shows **one** navigation surface per posture, and the content always stays scrollable and uncovered.
 
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-poses~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-poses@2x.png" width="760" alt="Six iPhone Duo poses, from closed to partially folded, flat and standing"></picture>
+</p>
+
+<p align="center"><sub>The poses iPhone Duo supports. This app maps them to four layouts: closed, book, flat and tabletop.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Device-poses">Designing for iPhone Duo, Device poses</a>.</sub></p>
+
 | Posture | How it's detected | Navigation | Content |
 | --- | --- | --- | --- |
 | **Closed** (outer display) | `UIHingeInteraction` reports `.closed` and the window is single-pane | The **system vertical tab bar** (`UITabBarController` with `UITab`s, SF Symbols) on the `verticalBarEdge` side, in the side safe-area strip | A full-height scrolling page, inset by the side safe area; the wordmark app bar has a Contact shortcut |
@@ -64,6 +71,64 @@ The app always shows **one** navigation surface per posture, and the content alw
 The split decision (`DualPaneGeometry.resolve`) uses, in order: Flutter `DisplayFeature`s (once the engine provides them, see [Limitations](#limitations)), then the native `reservedRegions(kind: .division)`, then a width breakpoint. Camera housings (`occlusion` regions) are merged into the safe-area padding, so nothing renders under them.
 
 If the native bar can't be shown but the system reports a vertical bar edge, a Flutter `DuoNavRail` is used as the fallback, on that edge. It's never shown at the same time as another navigation surface.
+
+## iPhone Duo design in pictures
+
+Apple's diagrams for the ideas this app is built on, each with a note on how the app applies it. The images load from developer.apple.com and are not copied into this repository.
+
+### Anatomy: two displays and a hinge
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-device-layout-outer~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-device-layout-outer@2x.png" width="300" alt="Outer display of iPhone Duo with the hinge and the outer front-facing camera"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-device-layout-inner~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-device-layout-inner@2x.png" width="400" alt="Inner display of iPhone Duo with the hinge and the inner front-facing camera"></picture>
+</p>
+
+<p align="center"><sub>Outer display (left) and inner display (right). The app reads the hinge with <code>UIHingeInteraction</code> and picks one layout per display.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Anatomy">Designing for iPhone Duo, Anatomy</a>.</sub></p>
+
+### Vertical controls: bars move to the side
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-tab-bar-toolbar-layout~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-tab-bar-toolbar-layout@2x.png" width="360" alt="Outer display with the Dynamic Island, status bar, toolbar and tab bar stacked on the trailing edge"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-multitasking~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-multitasking@2x.png" width="460" alt="Two apps in Split View on the inner display, each with its controls on its outer edge"></picture>
+</p>
+
+<p align="center"><sub>On the closed display, the app hands navigation to the system vertical tab bar on the <code>verticalBarEdge</code> side, below the camera, through the <code>setTabs</code> channel call.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Vertical-controls">Designing for iPhone Duo, Vertical controls</a>.</sub></p>
+
+### Reserved regions: cameras and the fold
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-safe-area-outer-camera~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-safe-area-outer-camera@2x.png" width="340" alt="Outer display with the outer camera region"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-safe-area-inner-camera~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-safe-area-inner-camera@2x.png" width="420" alt="Inner display with the folding region and the inner camera region"></picture>
+</p>
+
+<p align="center"><sub>The app reads these with <code>reservedRegions(kind: .occlusion)</code> for the cameras, merged into the safe-area padding, and <code>.division</code> for the fold, where the two panes split.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Reserved-regions">Designing for iPhone Duo, Reserved regions</a>.</sub></p>
+
+### One more level of hierarchy on the inner display
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-mail-compact~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-mail-compact@2x.png" width="260" alt="Mail on the outer display showing one email"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-mail-full~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-mail-full@2x.png" width="500" alt="Mail on the inner display with the email list and an email side by side"></picture>
+</p>
+
+<p align="center"><sub>Closed shows one level (here, the current section); open shows the section list next to the selected section. Same state on both displays.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Best-practices">Designing for iPhone Duo, Best practices</a>.</sub></p>
+
+### Split views that adapt to the fold
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-notes-sidebar-open~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-notes-sidebar-open@2x.png" width="400" alt="Notes fully open with a narrower list pane and a wider note pane"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-notes-sidebar-folded~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-notes-sidebar-folded@2x.png" width="400" alt="Notes partially folded with two equal panes, one on each side of the fold"></picture>
+</p>
+
+<p align="center"><sub>Flat (left) and partially folded (right). In book posture, the app splits exactly at the <code>.division</code> region so nothing is drawn over the hinge.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Reserved-regions">Designing for iPhone Duo, Reserved regions</a>.</sub></p>
+
+### Arrangement views
+
+<p align="center">
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-view-layout-split~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-view-layout-split@2x.png" width="400" alt="Split arrangement with a primary view and a secondary view side by side"></picture>
+  <picture><source media="(prefers-color-scheme: dark)" srcset="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-view-layout-overlay~dark@2x.png"><img src="https://developer.apple.com/tutorials/images/com.apple.HIG/designing-for-iphone-view-layout-overlay@2x.png" width="400" alt="Overlay arrangement with a smaller primary view on top of a secondary view"></picture>
+</p>
+
+<p align="center"><sub>Split (left) and overlay (right) arrangements, from <code>UIArrangementViewController</code>. The app's <code>DualPane</code> layout follows the split model; navigation stays outside it, as the HIG recommends.<br>Image: Apple Human Interface Guidelines, <a href="https://developer.apple.com/design/human-interface-guidelines/designing-for-iphone-duo#Arrangement-views">Designing for iPhone Duo, Arrangement views</a>.</sub></p>
 
 ## Apple documentation map
 
