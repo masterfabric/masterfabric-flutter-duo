@@ -156,14 +156,56 @@ class _RootShellState extends State<RootShell> {
             padding: maxInsets(mq.padding, occ),
             viewPadding: maxInsets(mq.viewPadding, occ),
           ),
-          child: _single(),
+          child: _single(fold),
         );
       },
     );
   }
 
   /// Folded / slab iPhone: the original single-screen layout, unchanged.
-  Widget _single() {
+  Widget _single(FoldInfo fold) {
+    // iPhone Duo outer display (and other displays where the system puts
+    // its bars vertically): Apple moves bars to the side, so use the Duo
+    // rail on the edge opposite the system vertical bar instead of a
+    // bottom pill that would eat the shorter height.
+    if (fold.verticalBarEdge != VerticalBarEdge.unspecified) {
+      final railLeading = fold.verticalBarEdge == VerticalBarEdge.trailing;
+      return Builder(
+        builder: (context) {
+          final pad = MediaQuery.paddingOf(context);
+          final rail = Padding(
+            padding: EdgeInsets.fromLTRB(
+              railLeading ? pad.left + 10 : 6,
+              12,
+              railLeading ? 6 : pad.right + 10,
+              pad.bottom + 12,
+            ),
+            child: Center(child: SingleChildScrollView(child: _rail(fold))),
+          );
+          return Scaffold(
+            appBar: AppBar(
+              titleSpacing: 20,
+              title: const MfWordmark(),
+              actions: [_contactButton()],
+            ),
+            body: Row(
+              children: [
+                if (railLeading) rail,
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeLeft: railLeading,
+                    removeRight: !railLeading,
+                    child: _contentStack,
+                  ),
+                ),
+                if (!railLeading) rail,
+              ],
+            ),
+          );
+        },
+      );
+    }
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 20,
@@ -211,7 +253,9 @@ class _RootShellState extends State<RootShell> {
     items: _items,
     selectedIndex: _index,
     onSelected: _goTo,
-    footer: fold.hinge == HingeStatus.none ? null : HingeGlyph(fold: fold),
+    footer: fold.hinge == HingeStatus.none || fold.hinge == HingeStatus.closed
+        ? null
+        : HingeGlyph(fold: fold),
   );
 
   /// Leading pane (book / flat): Duo rail + section list (list of the
@@ -224,27 +268,38 @@ class _RootShellState extends State<RootShell> {
     return Builder(
       builder: (context) {
         final pad = MediaQuery.paddingOf(context);
-        return ColoredBox(
+        return Material(
           color: MfColors.slate50,
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (withRail)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    pad.left + 14,
-                    pad.top + 12,
-                    4,
-                    pad.bottom + 12,
-                  ),
-                  child: Center(
-                    child: SingleChildScrollView(child: _rail(fold)),
-                  ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  pad.left + 22,
+                  pad.top + 18,
+                  20,
+                  0,
                 ),
+                child: const SizedBox(height: 44, child: MfWordmark()),
+              ),
               Expanded(
-                child: _SectionList(
-                  selected: _index,
-                  onSelected: _goTo,
-                  caption: _caption(geometry, fold),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (withRail)
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          pad.left + 14,
+                          14,
+                          2,
+                          pad.bottom + 14,
+                        ),
+                        child: SingleChildScrollView(child: _rail(fold)),
+                      ),
+                    Expanded(
+                      child: _SectionList(selected: _index, onSelected: _goTo),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -254,69 +309,79 @@ class _RootShellState extends State<RootShell> {
     );
   }
 
-  /// Bottom pane in tabletop posture: controls below the fold, content above.
+  /// Bottom pane in tabletop posture (Apple: content above the fold,
+  /// controls below): a posture strip and a 2x2 deck of large section
+  /// controls. Even column count so nothing straddles the centre.
   Widget _controlsPane(FoldInfo fold) {
     return Builder(
       builder: (context) {
         final pad = MediaQuery.paddingOf(context);
-        return ColoredBox(
+        return Material(
           color: MfColors.slate50,
-          child: Column(
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  pad.left + 20,
-                  14,
-                  pad.right + 20,
-                  6,
-                ),
-                child: Row(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              pad.left + 16,
+              16,
+              pad.right + 16,
+              pad.bottom + 16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
                     HingeGlyph(fold: fold, showLabel: false),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
-                        'Tabletop · ${fold.angle >= 0 ? '${fold.angle.round()}° · ' : ''}content above, controls below',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        'Tabletop${fold.angle >= 0 ? ' · ${fold.angle.round()}°' : ''}',
                         style: const TextStyle(
-                          fontSize: 12,
-                          color: MfColors.slate500,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: MfColors.slate600,
                         ),
                       ),
                     ),
+                    const Text(
+                      'Drag a section up to open it',
+                      style: TextStyle(fontSize: 12, color: MfColors.slate400),
+                    ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: GridView.count(
-                  // Even column count so the grid divides cleanly at the fold.
-                  crossAxisCount: 2,
-                  childAspectRatio: 3.2,
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  padding: EdgeInsets.fromLTRB(
-                    pad.left + 16,
-                    6,
-                    pad.right + 16,
-                    8,
-                  ),
-                  children: [
-                    for (var i = 0; i < _sections.length; i++)
-                      _DraggableSection(
-                        index: i,
-                        child: _SectionTile(
-                          section: _sections[i],
-                          selected: i == _index,
-                          onTap: () => _goTo(i),
-                          compact: true,
+                const SizedBox(height: 14),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, c) {
+                      const gap = 12.0;
+                      final w = (c.maxWidth - gap) / 2;
+                      final h = ((c.maxHeight - gap) / 2).clamp(64.0, 150.0);
+                      return Center(
+                        child: Wrap(
+                          spacing: gap,
+                          runSpacing: gap,
+                          children: [
+                            for (var i = 0; i < _sections.length; i++)
+                              SizedBox(
+                                width: w,
+                                height: h,
+                                child: _DraggableSection(
+                                  index: i,
+                                  child: _SectionTile(
+                                    section: _sections[i],
+                                    selected: i == _index,
+                                    onTap: () => _goTo(i),
+                                    fill: true,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
-                      ),
-                  ],
+                      );
+                    },
+                  ),
                 ),
-              ),
-              _pillBar(),
-            ],
+              ],
+            ),
           ),
         );
       },
@@ -437,19 +502,6 @@ class _RootShellState extends State<RootShell> {
       },
     );
   }
-
-  static String _caption(DualPaneGeometry g, FoldInfo fold) {
-    final src = switch (g.source) {
-      LayoutSource.displayFeature => 'Flutter display feature',
-      LayoutSource.reservedRegion => 'iPhone Duo fold region',
-      LayoutSource.breakpoint => 'opened inner display',
-      LayoutSource.single => 'single screen',
-    };
-    final hinge = fold.hinge == HingeStatus.none
-        ? ''
-        : ' · ${HingeGlyph.postureLabel(fold)}${fold.angle >= 0 ? ' ${fold.angle.round()}°' : ''}';
-    return 'Two-pane layout · $src$hinge';
-  }
 }
 
 /// Long-press a section and drag it across the fold into the content pane.
@@ -466,6 +518,9 @@ class _DraggableSection extends StatelessWidget {
       hapticFeedbackOnStart: true,
       feedback: Material(
         color: Colors.transparent,
+        elevation: 14,
+        shadowColor: const Color(0x55000000),
+        borderRadius: BorderRadius.circular(18),
         child: SizedBox(
           width: 260,
           child: Opacity(
@@ -474,7 +529,6 @@ class _DraggableSection extends StatelessWidget {
               section: _sections[index],
               selected: true,
               onTap: () {},
-              compact: true,
             ),
           ),
         ),
@@ -486,31 +540,22 @@ class _DraggableSection extends StatelessWidget {
 }
 
 class _SectionList extends StatelessWidget {
-  const _SectionList({
-    required this.selected,
-    required this.onSelected,
-    required this.caption,
-  });
+  const _SectionList({required this.selected, required this.onSelected});
 
   final int selected;
   final ValueChanged<int> onSelected;
-  final String caption;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     final pad = MediaQuery.paddingOf(context);
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, pad.top + 14, 16, pad.bottom + 16),
+      padding: EdgeInsets.fromLTRB(10, 14, 20, pad.bottom + 20),
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(4, 0, 4, 18),
-          child: Align(alignment: Alignment.centerLeft, child: MfWordmark()),
-        ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(4, 4, 4, 16),
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
           child: Text(
-            'Explore MasterFabric',
+            'Explore',
             style: t.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
               letterSpacing: -0.5,
@@ -528,35 +573,33 @@ class _SectionList extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
-        const SizedBox(height: 6),
-        const Row(
-          children: [
-            Icon(Icons.open_with_rounded, size: 14, color: MfColors.slate400),
-            SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                'Long-press a section and drag it across the fold to open it',
-                style: TextStyle(fontSize: 11, color: MfColors.slate400),
+        const SizedBox(height: 4),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 4),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: EdgeInsets.only(top: 1),
+                child: Icon(
+                  Icons.open_with_rounded,
+                  size: 14,
+                  color: MfColors.slate400,
+                ),
               ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            const Icon(
-              Icons.view_sidebar_outlined,
-              size: 14,
-              color: MfColors.slate400,
-            ),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text(
-                caption,
-                style: const TextStyle(fontSize: 11, color: MfColors.slate400),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Long-press a section and drag it across the fold to open it.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: MfColors.slate400,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -568,13 +611,15 @@ class _SectionTile extends StatelessWidget {
     required this.section,
     required this.selected,
     required this.onTap,
-    this.compact = false,
+    this.fill = false,
   });
 
   final _Section section;
   final bool selected;
   final VoidCallback onTap;
-  final bool compact;
+
+  /// Fills its parent box (tabletop control deck) instead of sizing to text.
+  final bool fill;
 
   @override
   Widget build(BuildContext context) {
@@ -597,7 +642,7 @@ class _SectionTile extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.symmetric(
               horizontal: 14,
-              vertical: compact ? 8 : 14,
+              vertical: fill ? 10 : 14,
             ),
             child: Row(
               children: [
@@ -624,25 +669,26 @@ class _SectionTile extends StatelessWidget {
                     children: [
                       Text(
                         section.item.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           color: fg,
                         ),
                       ),
-                      if (!compact) const SizedBox(height: 2),
-                      if (!compact)
-                        Text(
-                          section.subtitle,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: selected
-                                ? const Color(0xFFCBD5E1)
-                                : MfColors.slate500,
-                          ),
+                      const SizedBox(height: 2),
+                      Text(
+                        section.subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: selected
+                              ? const Color(0xFFCBD5E1)
+                              : MfColors.slate500,
                         ),
+                      ),
                     ],
                   ),
                 ),

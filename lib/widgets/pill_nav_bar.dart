@@ -158,7 +158,8 @@ class _PillTab extends StatelessWidget {
                   size: 24,
                 ),
               ),
-              AnimatedSize(
+              Flexible(
+                child: AnimatedSize(
                 duration: PillNavBar._duration,
                 curve: PillNavBar._curve,
                 child: selected
@@ -167,7 +168,7 @@ class _PillTab extends StatelessWidget {
                         child: Text(
                           item.label,
                           maxLines: 1,
-                          overflow: TextOverflow.fade,
+                          overflow: TextOverflow.ellipsis,
                           softWrap: false,
                           style: const TextStyle(
                             color: Colors.white,
@@ -178,6 +179,7 @@ class _PillTab extends StatelessWidget {
                         ),
                       )
                     : const SizedBox.shrink(),
+                ),
               ),
             ],
           ),

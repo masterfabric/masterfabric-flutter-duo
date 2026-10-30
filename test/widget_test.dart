@@ -30,7 +30,7 @@ void main() {
     await tester.pumpWidget(const MasterFabricApp());
     expect(find.byKey(const ValueKey('mf-nav-pane')), findsOneWidget);
     expect(find.byKey(const ValueKey('mf-content-pane')), findsOneWidget);
-    expect(find.text('Explore MasterFabric'), findsOneWidget);
+    expect(find.text('Explore'), findsOneWidget);
 
     // Selecting a section in the nav pane switches the content pane.
     await tester.tap(find.text('Clients, Academy & open source'));
@@ -141,10 +141,12 @@ void main() {
     final controls = tester.getRect(find.byKey(const ValueKey('mf-nav-pane')));
     expect(content.bottom, lessThanOrEqualTo(455));
     expect(controls.top, greaterThanOrEqualTo(495));
-    expect(
-      tester.getRect(find.byType(PillNavBar)).top,
-      greaterThanOrEqualTo(495),
-    );
+    // The section controls sit below the fold, not straddling it.
+    for (final label in ['Home', 'Services', 'Work', 'Contact']) {
+      final r = tester.getRect(find.text(label).last);
+      expect(r.top, greaterThanOrEqualTo(495), reason: label);
+      expect(r.bottom, lessThanOrEqualTo(951), reason: label);
+    }
   });
 
   testWidgets('system vertical bar on the leading edge moves the rail', (
