@@ -21,18 +21,19 @@ class MfColors {
 
 class AppTheme {
   static ThemeData light() {
-    final scheme = ColorScheme.fromSeed(
-      seedColor: MfColors.blue600,
-      brightness: Brightness.light,
-    ).copyWith(
-      primary: MfColors.blue600,
-      onPrimary: Colors.white,
-      surface: Colors.white,
-      onSurface: MfColors.slate900,
-      onSurfaceVariant: MfColors.slate600,
-      outlineVariant: MfColors.slate100,
-      secondary: MfColors.claude,
-    );
+    final scheme =
+        ColorScheme.fromSeed(
+          seedColor: MfColors.blue600,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: MfColors.blue600,
+          onPrimary: Colors.white,
+          surface: Colors.white,
+          onSurface: MfColors.slate900,
+          onSurfaceVariant: MfColors.slate600,
+          outlineVariant: MfColors.slate100,
+          secondary: MfColors.claude,
+        );
 
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
     final text = base.textTheme.apply(
@@ -98,7 +99,9 @@ class AppTheme {
         style: FilledButton.styleFrom(
           backgroundColor: MfColors.slate900,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
@@ -106,7 +109,9 @@ class AppTheme {
         style: OutlinedButton.styleFrom(
           foregroundColor: MfColors.slate900,
           side: const BorderSide(color: Color(0xFFE2E8F0)),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
           textStyle: const TextStyle(fontWeight: FontWeight.w600),
         ),
       ),

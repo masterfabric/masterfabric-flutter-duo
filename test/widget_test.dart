@@ -53,12 +53,13 @@ void main() {
       ),
     );
     await tester.pumpWidget(const MasterFabricApp());
-    final nav = tester.getRect(find.byKey(const ValueKey('mf-nav-pane')));
-    final content = tester.getRect(
-      find.byKey(const ValueKey('mf-content-pane')),
-    );
-    expect(nav.right, lessThanOrEqualTo(455));
-    expect(content.left, greaterThanOrEqualTo(495));
+    // Backgrounds bleed into the fold; every visible text stays clear of it.
+    for (final r in textRects(tester, 'mf-nav-pane')) {
+      expect(r.right, lessThanOrEqualTo(455));
+    }
+    for (final r in textRects(tester, 'mf-content-pane')) {
+      expect(r.left, greaterThanOrEqualTo(495));
+    }
   });
 
   Future<void> pumpDuo(WidgetTester tester, Size size, [FoldInfo? fold]) async {
@@ -69,21 +70,18 @@ void main() {
     await tester.pumpWidget(const MasterFabricApp());
   }
 
-  testWidgets('open Duo uses the vertical Duo navbar, not the pill bar', (
+  testWidgets('open Duo: the section list is the only navigation', (
     tester,
   ) async {
     await pumpDuo(tester, const Size(951, 669));
-    expect(find.byType(DuoNavRail), findsOneWidget);
+    expect(find.byType(DuoNavRail), findsNothing);
     expect(find.byType(PillNavBar), findsNothing);
-    final rail = tester.getRect(find.byType(DuoNavRail));
-    final nav = tester.getRect(find.byKey(const ValueKey('mf-nav-pane')));
-    expect(rail.left, lessThan(nav.left + 40)); // leading edge of the list pane
-    expect(rail.right, lessThan(nav.right));
+    expect(find.text('Explore'), findsOneWidget);
 
     await tester.tap(
       find.descendant(
-        of: find.byType(DuoNavRail),
-        matching: find.byIcon(Icons.auto_awesome_outlined),
+        of: find.byKey(const ValueKey('mf-nav-pane')),
+        matching: find.text('Services'),
       ),
     );
     await tester.pumpAndSettle();
@@ -117,7 +115,7 @@ void main() {
     );
     expect(find.byType(HingeGlyph), findsOneWidget);
     expect(find.text('Book'), findsOneWidget);
-    expect(find.text('120°'), findsOneWidget);
+    expect(find.textContaining('120°', findRichText: true), findsOneWidget);
   });
 
   testWidgets('tabletop: content above the fold, controls below', (
@@ -135,12 +133,13 @@ void main() {
         ],
       ),
     );
+    expect(find.byType(DuoNavRail), findsNothing);
+    expect(find.byType(PillNavBar), findsNothing);
+    // The content pane ends at the fold centre; its header clears the fold.
     final content = tester.getRect(
       find.byKey(const ValueKey('mf-content-pane')),
     );
-    final controls = tester.getRect(find.byKey(const ValueKey('mf-nav-pane')));
-    expect(content.bottom, lessThanOrEqualTo(455));
-    expect(controls.top, greaterThanOrEqualTo(495));
+    expect(content.bottom, lessThanOrEqualTo(475.5));
     // The section controls sit below the fold, not straddling it.
     for (final label in ['Home', 'Services', 'Work', 'Contact']) {
       final r = tester.getRect(find.text(label).last);
@@ -149,21 +148,24 @@ void main() {
     }
   });
 
-  testWidgets('system vertical bar on the leading edge moves the rail', (
+  testWidgets('closed Duo with the native tab bar: no Flutter navbar', (
     tester,
   ) async {
+    DuoBridge.instance.debugSetNativeTabsShown(true);
+    addTearDown(() => DuoBridge.instance.debugSetNativeTabsShown(false));
     await pumpDuo(
       tester,
-      const Size(951, 669),
+      const Size(466, 678),
       const FoldInfo(
         supported: true,
-        hinge: HingeStatus.fullyOpen,
-        angle: 180,
-        verticalBarEdge: VerticalBarEdge.leading,
+        hinge: HingeStatus.closed,
+        verticalBarEdge: VerticalBarEdge.trailing,
       ),
     );
-    final rail = tester.getRect(find.byType(DuoNavRail));
-    expect(rail.left, greaterThan(951 / 2));
+    expect(find.byType(DuoNavRail), findsNothing);
+    expect(find.byType(PillNavBar), findsNothing);
+    expect(find.byType(Scrollable), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('dragging a section across the fold opens it', (tester) async {
@@ -184,7 +186,8 @@ void main() {
     final before = tester.state(find.byType(Scrollable).first);
     tester.view.physicalSize = const Size(951 * 3, 669 * 3);
     await tester.pumpAndSettle();
-    expect(find.byType(DuoNavRail), findsOneWidget);
+    expect(find.text('Explore'), findsOneWidget);
+    expect(find.byType(DuoNavRail), findsNothing);
     tester.view.physicalSize = const Size(402 * 3, 874 * 3);
     await tester.pumpAndSettle();
     expect(
@@ -284,3 +287,10 @@ void main() {
     });
   });
 }
+
+/// Rects of the on-screen texts inside the pane keyed [key].
+Iterable<Rect> textRects(WidgetTester tester, String key) => find
+    .descendant(of: find.byKey(ValueKey(key)), matching: find.byType(Text))
+    .evaluate()
+    .map((e) => tester.getRect(find.byWidget(e.widget).first))
+    .where((r) => r.width > 0 && r.height > 0);

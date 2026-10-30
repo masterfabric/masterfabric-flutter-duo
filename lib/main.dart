@@ -97,6 +97,39 @@ class _RootShellState extends State<RootShell> {
 
   void _goTo(int i) => setState(() => _index = i);
 
+  @override
+  void initState() {
+    super.initState();
+    DuoBridge.instance.onNativeTabSelected = (i) {
+      if (mounted && i != _index) _goTo(i);
+    };
+  }
+
+  @override
+  void dispose() {
+    DuoBridge.instance.onNativeTabSelected = null;
+    super.dispose();
+  }
+
+  /// SF Symbols for the native UIKit tab bar, in [_sections] order.
+  static const _symbols = ['house', 'sparkles', 'square.grid.2x2', 'envelope'];
+
+  /// iPhone Duo closed: hand navigation to the native UIKit tab bar, which
+  /// the system renders in its vertical bar on the outer display.
+  void _syncNativeTabs(bool closed) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      DuoBridge.instance.syncNativeTabs(
+        tabs: [
+          for (var i = 0; i < _sections.length; i++)
+            (title: _sections[i].item.label, symbol: _symbols[i]),
+        ],
+        selected: _index,
+        visible: closed,
+      );
+    });
+  }
+
   late final List<Widget> _pages = <Widget>[
     HomeScreen(onNavigate: _goTo),
     const ServicesScreen(),
@@ -125,16 +158,13 @@ class _RootShellState extends State<RootShell> {
   PillNavBar _pillBar() =>
       PillNavBar(selectedIndex: _index, onSelected: _goTo, items: _items);
 
-  Widget _contactButton() => Padding(
-    padding: const EdgeInsets.only(right: 12),
-    child: FilledButton(
-      onPressed: () => _goTo(3),
-      style: FilledButton.styleFrom(
-        visualDensity: VisualDensity.compact,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-      ),
-      child: const Text('Contact'),
+  Widget _contactButton() => FilledButton(
+    onPressed: () => _goTo(3),
+    style: FilledButton.styleFrom(
+      visualDensity: VisualDensity.compact,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
     ),
+    child: const Text('Contact'),
   );
 
   @override
@@ -145,11 +175,13 @@ class _RootShellState extends State<RootShell> {
         final fold = DuoBridge.instance.info;
         final mq = MediaQuery.of(context);
         final geometry = DualPaneGeometry.resolve(mq, fold);
+        _syncNativeTabs(!geometry.isDual && fold.hinge == HingeStatus.closed);
         if (geometry.isDual) return _dual(geometry, fold);
         // Single screen: still keep clear of an active camera housing.
         final occ = occlusionInsets(
           Offset.zero & mq.size,
           fold.activeOcclusions,
+          mq.padding,
         );
         return MediaQuery(
           data: mq.copyWith(
@@ -164,6 +196,23 @@ class _RootShellState extends State<RootShell> {
 
   /// Folded / slab iPhone: the original single-screen layout, unchanged.
   Widget _single(FoldInfo fold) {
+    // Native UIKit tab bar is the navigation: no Flutter rail / pill.
+    if (DuoBridge.instance.nativeTabsShown) {
+      // Closed Duo: the native UITabBar (overlaid by the platform channel)
+      // is the only navigation; leave room for it under the content.
+      final mq = MediaQuery.of(context);
+      return MediaQuery(
+        data: mq.copyWith(
+          padding: mq.padding.copyWith(
+            bottom: mq.padding.bottom + kNativeTabBarHeight,
+          ),
+        ),
+        child: Scaffold(
+          appBar: AppBar(titleSpacing: 20, title: const MfWordmark()),
+          body: _contentStack,
+        ),
+      );
+    }
     // iPhone Duo outer display (and other displays where the system puts
     // its bars vertically): Apple moves bars to the side, so use the Duo
     // rail on the edge opposite the system vertical bar instead of a
@@ -172,35 +221,57 @@ class _RootShellState extends State<RootShell> {
       final railLeading = fold.verticalBarEdge == VerticalBarEdge.trailing;
       return Builder(
         builder: (context) {
-          final pad = MediaQuery.paddingOf(context);
-          final rail = Padding(
-            padding: EdgeInsets.fromLTRB(
-              railLeading ? pad.left + 10 : 6,
-              12,
-              railLeading ? 6 : pad.right + 10,
-              pad.bottom + 12,
-            ),
-            child: Center(child: SingleChildScrollView(child: _rail(fold))),
-          );
+          final mq = MediaQuery.of(context);
+          final pad = mq.padding;
+          // The rail floats over full-bleed content; content just gets the
+          // rail's footprint as extra safe area on that side.
+          const gutter = 10.0;
+          const footprint = gutter + DuoNavRail.width;
           return Scaffold(
             appBar: AppBar(
               titleSpacing: 20,
               title: const MfWordmark(),
-              actions: [_contactButton()],
+              actions: [if (_index != 3) _contactButton()],
+              actionsPadding: const EdgeInsets.only(right: 20),
             ),
-            body: Row(
-              children: [
-                if (railLeading) rail,
-                Expanded(
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeLeft: railLeading,
-                    removeRight: !railLeading,
-                    child: _contentStack,
-                  ),
-                ),
-                if (!railLeading) rail,
-              ],
+            body: Builder(
+              builder: (context) {
+                final body = MediaQuery.paddingOf(context);
+                return Stack(
+                  children: [
+                    Positioned.fill(
+                      child: MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          padding: body.copyWith(
+                            left: railLeading
+                                ? body.left + footprint
+                                : body.left,
+                            right: railLeading
+                                ? body.right
+                                : body.right + footprint,
+                          ),
+                        ),
+                        child: _contentStack,
+                      ),
+                    ),
+                    Positioned(
+                      top: 0,
+                      bottom: 0,
+                      left: railLeading ? pad.left + gutter : null,
+                      right: railLeading ? null : pad.right + gutter,
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: 12,
+                          bottom: body.bottom + 12,
+                        ),
+                        child: Center(
+                          child: SingleChildScrollView(child: _rail(fold)),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           );
         },
@@ -210,7 +281,8 @@ class _RootShellState extends State<RootShell> {
       appBar: AppBar(
         titleSpacing: 20,
         title: const MfWordmark(),
-        actions: [_contactButton()],
+        actions: [if (_index != 3) _contactButton()],
+        actionsPadding: const EdgeInsets.only(right: 20),
       ),
       body: _contentStack,
       extendBody: true,
@@ -223,28 +295,20 @@ class _RootShellState extends State<RootShell> {
   /// camera housings are kept clear.
   Widget _dual(DualPaneGeometry geometry, FoldInfo fold) {
     final tabletop = geometry.axis == PaneAxis.vertical;
-    // UIKit puts its vertical bar on one side; our rail takes the other.
-    final railInContent = fold.verticalBarEdge == VerticalBarEdge.leading;
-
-    final Widget primary = tabletop
-        ? _controlsPane(fold)
-        : _listPane(geometry, fold, withRail: !railInContent);
+    // One navigation at a time: the leading pane *is* the Duo navbar
+    // (book / flat) or the control deck (tabletop).
+    final Widget primary = tabletop ? _controlsPane(fold) : _navPane(fold);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
-      child: ColoredBox(
-        color: Colors.white,
-        child: DualPane(
-          geometry: geometry,
-          primary: KeyedSubtree(
-            key: const ValueKey('mf-nav-pane'),
-            child: primary,
-          ),
-          secondary: _contentPane(fold, withRail: railInContent && !tabletop),
-          hingeColor: geometry.source == LayoutSource.breakpoint
-              ? const Color(0xFFE2E8F0)
-              : MfColors.slate100,
-          occlusions: fold.activeOcclusions.toList(),
+      child: DualPane(
+        geometry: geometry,
+        primary: KeyedSubtree(
+          key: const ValueKey('mf-nav-pane'),
+          child: primary,
         ),
+        secondary: _contentPane(fold),
+        hingeColor: Colors.white,
+        occlusions: fold.activeOcclusions.toList(),
       ),
     );
   }
@@ -258,51 +322,63 @@ class _RootShellState extends State<RootShell> {
         : HingeGlyph(fold: fold),
   );
 
-  /// Leading pane (book / flat): Duo rail + section list (list of the
-  /// list-detail pair; drag a tile across the fold to open it).
-  Widget _listPane(
-    DualPaneGeometry geometry,
-    FoldInfo fold, {
-    required bool withRail,
-  }) {
+  /// Leading pane (book / flat): the expanded Duo navbar. It is the only
+  /// navigation while open (list of the list-detail pair); drag a tile
+  /// across the fold to open it.
+  Widget _navPane(FoldInfo fold) {
     return Builder(
       builder: (context) {
         final pad = MediaQuery.paddingOf(context);
         return Material(
           color: MfColors.slate50,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  pad.left + 22,
-                  pad.top + 18,
-                  20,
-                  0,
-                ),
-                child: const SizedBox(height: 44, child: MfWordmark()),
-              ),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (withRail)
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(
-                          pad.left + 14,
-                          14,
-                          2,
-                          pad.bottom + 14,
-                        ),
-                        child: SingleChildScrollView(child: _rail(fold)),
-                      ),
-                    Expanded(
-                      child: _SectionList(selected: _index, onSelected: _goTo),
+          child: Padding(
+            padding: EdgeInsets.only(left: pad.left, right: pad.right),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: EdgeInsets.fromLTRB(24, pad.top + 18, 20, 0),
+                  child: const SizedBox(
+                    height: 44,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: MfWordmark(),
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ],
+                Expanded(
+                  child: _SectionList(selected: _index, onSelected: _goTo),
+                ),
+                if (fold.hinge == HingeStatus.none)
+                  SizedBox(height: pad.bottom)
+                else
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(24, 8, 20, pad.bottom + 14),
+                    child: Row(
+                      children: [
+                        HingeGlyph(fold: fold, showLabel: false),
+                        const SizedBox(width: 10),
+                        Text(
+                          HingeGlyph.postureLabel(fold),
+                          style: const TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: MfColors.slate600,
+                          ),
+                        ),
+                        if (fold.angle >= 0)
+                          Text(
+                            '  ·  ${fold.angle.round()}°',
+                            style: const TextStyle(
+                              fontSize: 12.5,
+                              color: MfColors.slate400,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -321,7 +397,7 @@ class _RootShellState extends State<RootShell> {
           child: Padding(
             padding: EdgeInsets.fromLTRB(
               pad.left + 16,
-              16,
+              pad.top + 16,
               pad.right + 16,
               pad.bottom + 16,
             ),
@@ -390,7 +466,7 @@ class _RootShellState extends State<RootShell> {
 
   /// Trailing / top pane: the selected section, full bleed. Accepts section
   /// tiles dragged across the fold.
-  Widget _contentPane(FoldInfo fold, {required bool withRail}) {
+  Widget _contentPane(FoldInfo fold) {
     return Builder(
       key: const ValueKey('mf-content-pane'),
       builder: (context) {
@@ -398,7 +474,12 @@ class _RootShellState extends State<RootShell> {
         final content = Column(
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(20, pad.top + 10, pad.right + 8, 8),
+              padding: EdgeInsets.fromLTRB(
+                pad.left + 20,
+                pad.top + 14,
+                pad.right + 20,
+                6,
+              ),
               child: SizedBox(
                 height: 44,
                 child: Row(
@@ -478,27 +559,7 @@ class _RootShellState extends State<RootShell> {
             ),
           ],
         );
-        return Material(
-          color: Colors.white,
-          child: withRail
-              ? Row(
-                  children: [
-                    Expanded(child: content),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(
-                        4,
-                        pad.top + 12,
-                        pad.right + 14,
-                        pad.bottom + 12,
-                      ),
-                      child: Center(
-                        child: SingleChildScrollView(child: _rail(fold)),
-                      ),
-                    ),
-                  ],
-                )
-              : content,
-        );
+        return Material(color: Colors.white, child: content);
       },
     );
   }
@@ -548,9 +609,8 @@ class _SectionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final pad = MediaQuery.paddingOf(context);
     return ListView(
-      padding: EdgeInsets.fromLTRB(10, 14, 20, pad.bottom + 20),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),

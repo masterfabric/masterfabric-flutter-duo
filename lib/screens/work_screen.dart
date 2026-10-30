@@ -14,7 +14,8 @@ class WorkScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, MediaQuery.paddingOf(context).bottom + 24),
+      padding: pagePadding(context)
+          .copyWith(top: 24, bottom: MediaQuery.paddingOf(context).bottom + 24),
       children: [
         const SectionHeader(
           eyebrow: 'Our Works',
@@ -113,7 +114,10 @@ class _ClientCard extends StatelessWidget {
               // same optical box so wide and tall marks read at similar weight.
               Container(
                 height: 84,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 20,
+                ),
                 decoration: BoxDecoration(
                   color: MfColors.slate50,
                   borderRadius: BorderRadius.circular(14),
@@ -148,12 +152,19 @@ class _ClientCard extends StatelessWidget {
                             _domain,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12, color: MfColors.slate500),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: MfColors.slate500,
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.north_east_rounded, size: 16, color: MfColors.slate400),
+                    const Icon(
+                      Icons.north_east_rounded,
+                      size: 16,
+                      color: MfColors.slate400,
+                    ),
                   ],
                 ),
               ),
@@ -194,7 +205,10 @@ class _AcademyCard extends StatelessWidget {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Image.asset('assets/images/academy-badge.png', fit: BoxFit.contain),
+                child: Image.asset(
+                  'assets/images/academy-badge.png',
+                  fit: BoxFit.contain,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -225,7 +239,8 @@ class _AcademyCard extends StatelessWidget {
           ),
           const Gap(20),
           FilledButton.icon(
-            onPressed: () => openLink(context, 'https://academy.masterfabric.co'),
+            onPressed: () =>
+                openLink(context, 'https://academy.masterfabric.co'),
             style: FilledButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: MfColors.slate900,
@@ -265,7 +280,11 @@ class _OpenSourceCard extends StatelessWidget {
                   color: MfColors.blue50,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.hub_rounded, color: MfColors.blue600, size: 26),
+                child: const Icon(
+                  Icons.hub_rounded,
+                  color: MfColors.blue600,
+                  size: 26,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -276,7 +295,10 @@ class _OpenSourceCard extends StatelessWidget {
                     const SizedBox(height: 6),
                     Text(
                       'Open-source MCP learning',
-                      style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.4),
+                      style: t.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.4,
+                      ),
                     ),
                   ],
                 ),
@@ -290,13 +312,25 @@ class _OpenSourceCard extends StatelessWidget {
           ),
           const Gap(16),
           const TagWrap([
-            'Flutter', 'Expo / React Native', 'DevOps', 'NestJS', 'Next.js', 'Go',
-            'TypeScript', 'GraphQL', 'AI Agents',
+            'Flutter',
+            'Expo / React Native',
+            'DevOps',
+            'NestJS',
+            'Next.js',
+            'Go',
+            'TypeScript',
+            'GraphQL',
+            'AI Agents',
           ]),
           const Gap(20),
           OutlinedButton.icon(
-            onPressed: () => openLink(context, 'https://github.com/masterfabric/one-hundered-days'),
-            style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+            onPressed: () => openLink(
+              context,
+              'https://github.com/masterfabric/one-hundered-days',
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(50),
+            ),
             icon: const Icon(Icons.code_rounded, size: 18),
             label: const Text('one-hundered-days on GitHub'),
           ),

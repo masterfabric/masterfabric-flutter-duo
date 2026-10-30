@@ -6,7 +6,11 @@ import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 
 class PillNavItem {
-  const PillNavItem({required this.icon, required this.selectedIcon, required this.label});
+  const PillNavItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
   final IconData icon;
   final IconData selectedIcon;
   final String label;
@@ -69,7 +73,10 @@ class PillNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(barHeight / 2),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 1),
+                border: Border.all(
+                  color: Colors.white.withValues(alpha: 0.9),
+                  width: 1,
+                ),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {
@@ -81,7 +88,8 @@ class PillNavBar extends StatelessWidget {
                   double leftOf(int i) => i <= selectedIndex
                       ? i * otherWidth
                       : selectedWidth + (i - 1) * otherWidth;
-                  double widthOf(int i) => i == selectedIndex ? selectedWidth : otherWidth;
+                  double widthOf(int i) =>
+                      i == selectedIndex ? selectedWidth : otherWidth;
 
                   return Stack(
                     children: [
@@ -111,7 +119,9 @@ class PillNavBar extends StatelessWidget {
                             item: items[i],
                             selected: i == selectedIndex,
                             onTap: () {
-                              if (i != selectedIndex) HapticFeedback.lightImpact();
+                              if (i != selectedIndex) {
+                                HapticFeedback.lightImpact();
+                              }
                               onSelected(i);
                             },
                           ),
@@ -129,7 +139,11 @@ class PillNavBar extends StatelessWidget {
 }
 
 class _PillTab extends StatelessWidget {
-  const _PillTab({required this.item, required this.selected, required this.onTap});
+  const _PillTab({
+    required this.item,
+    required this.selected,
+    required this.onTap,
+  });
 
   final PillNavItem item;
   final bool selected;
@@ -160,25 +174,25 @@ class _PillTab extends StatelessWidget {
               ),
               Flexible(
                 child: AnimatedSize(
-                duration: PillNavBar._duration,
-                curve: PillNavBar._curve,
-                child: selected
-                    ? Padding(
-                        padding: const EdgeInsets.only(left: 6),
-                        child: Text(
-                          item.label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          softWrap: false,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: -0.1,
+                  duration: PillNavBar._duration,
+                  curve: PillNavBar._curve,
+                  child: selected
+                      ? Padding(
+                          padding: const EdgeInsets.only(left: 6),
+                          child: Text(
+                            item.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.1,
+                            ),
                           ),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
             ],

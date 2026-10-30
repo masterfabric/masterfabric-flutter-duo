@@ -12,7 +12,8 @@ class ServicesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, MediaQuery.paddingOf(context).bottom + 24),
+      padding: pagePadding(context)
+          .copyWith(top: 24, bottom: MediaQuery.paddingOf(context).bottom + 24),
       children: [
         const SectionHeader(
           eyebrow: 'What we are hired to build',
@@ -20,9 +21,15 @@ class ServicesScreen extends StatelessWidget {
           body: SiteContent.hiredBody,
         ),
         const Gap(18),
-        for (final f in SiteContent.hiredFor) ...[FeatureCard(f), const Gap(10)],
+        for (final f in SiteContent.hiredFor) ...[
+          FeatureCard(f),
+          const Gap(10),
+        ],
         const Gap(24),
-        Text('Core services', style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700)),
+        Text(
+          'Core services',
+          style: t.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const Gap(12),
         Card(
           child: Padding(
@@ -30,13 +37,28 @@ class ServicesScreen extends StatelessWidget {
             child: Column(
               children: [
                 for (var i = 0; i < SiteContent.coreServices.length; i++) ...[
-                  ListTile(
-                    dense: true,
-                    leading: const Icon(Icons.arrow_forward_rounded, color: MfColors.blue600, size: 20),
-                    minLeadingWidth: 20,
-                    title: Text(
-                      SiteContent.coreServices[i],
-                      style: const TextStyle(fontSize: 14, color: MfColors.slate800, height: 1.35),
+                  // ListTile wraps itself in a SafeArea; the page already
+                  // applied the side insets, so don't let it apply them again.
+                  MediaQuery.removePadding(
+                    context: context,
+                    removeLeft: true,
+                    removeRight: true,
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(
+                        Icons.arrow_forward_rounded,
+                        color: MfColors.blue600,
+                        size: 20,
+                      ),
+                      minLeadingWidth: 20,
+                      title: Text(
+                        SiteContent.coreServices[i],
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: MfColors.slate800,
+                          height: 1.35,
+                        ),
+                      ),
                     ),
                   ),
                   if (i != SiteContent.coreServices.length - 1)
@@ -47,17 +69,26 @@ class ServicesScreen extends StatelessWidget {
           ),
         ),
         const Gap(32),
-        const SectionHeader(eyebrow: 'How we work', title: 'From discovery to operation'),
+        const SectionHeader(
+          eyebrow: 'How we work',
+          title: 'From discovery to operation',
+        ),
         const Gap(18),
         for (var i = 0; i < SiteContent.process.length; i++)
-          StepTile(SiteContent.process[i], isLast: i == SiteContent.process.length - 1),
+          StepTile(
+            SiteContent.process[i],
+            isLast: i == SiteContent.process.length - 1,
+          ),
         const Gap(32),
         const SectionHeader(
           title: 'Supercharge Your Service Experience',
           body: 'Join companies that have optimized their products and services with MasterFabric.',
         ),
         const Gap(18),
-        for (final f in SiteContent.supercharge) ...[FeatureCard(f), const Gap(10)],
+        for (final f in SiteContent.supercharge) ...[
+          FeatureCard(f),
+          const Gap(10),
+        ],
         const Gap(28),
         const SectionHeader(
           title: 'App Design, Optimization and Growth',
@@ -83,13 +114,23 @@ class ServicesScreen extends StatelessWidget {
                     children: [
                       Icon(f.icon, color: MfColors.blue600),
                       const Gap(10),
-                      Text(f.title, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
+                      Text(
+                        f.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
                       const Gap(4),
                       Expanded(
                         child: Text(
                           f.body,
                           overflow: TextOverflow.fade,
-                          style: const TextStyle(fontSize: 12, color: MfColors.slate500, height: 1.35),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: MfColors.slate500,
+                            height: 1.35,
+                          ),
                         ),
                       ),
                     ],
@@ -108,15 +149,21 @@ class ServicesScreen extends StatelessWidget {
         ),
         const Gap(16),
         for (final entry in SiteContent.techGroups.entries) ...[
-          Text(entry.key, style: t.titleSmall?.copyWith(color: MfColors.slate500)),
+          Text(
+            entry.key,
+            style: t.titleSmall?.copyWith(color: MfColors.slate500),
+          ),
           const Gap(8),
           TagWrap(entry.value),
           const Gap(16),
         ],
         const Gap(8),
         OutlinedButton.icon(
-          onPressed: () => openLink(context, 'https://masterfabric.co/services/'),
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+          onPressed: () =>
+              openLink(context, 'https://masterfabric.co/services/'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(50),
+          ),
           icon: const Icon(Icons.open_in_new_rounded, size: 18),
           label: const Text('Services on masterfabric.co'),
         ),

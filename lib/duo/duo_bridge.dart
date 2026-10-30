@@ -6,6 +6,9 @@ import 'package:flutter/widgets.dart';
 
 import 'fold_info.dart';
 
+/// Height of the native UITabBar overlay (above the bottom safe area).
+const double kNativeTabBarHeight = 49;
+
 /// Listens to the native `masterfabric/duo` channel (see ios/Runner/AppDelegate.swift).
 ///
 /// Re-queries whenever the window metrics change (fold/unfold resizes the
@@ -26,7 +29,13 @@ class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
     _started = true;
     if (kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) return;
     _channel.setMethodCallHandler((call) async {
-      if (call.method == 'update') _apply(call.arguments);
+      switch (call.method) {
+        case 'update':
+          _apply(call.arguments);
+        case 'tabSelected':
+          final i = call.arguments;
+          if (i is int) onNativeTabSelected?.call(i);
+      }
     });
     WidgetsBinding.instance.addObserver(this);
     unawaited(refresh());
@@ -51,6 +60,58 @@ class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
 
   @visibleForTesting
   void debugSet(FoldInfo info) => _setInfo(info);
+
+  /// Called when the user taps a tab in the native (UIKit) tab bar.
+  void Function(int index)? onNativeTabSelected;
+
+  bool _nativeTabsShown = false;
+
+  /// Whether the native UIKit tab bar is currently the app's navigation
+  /// (iPhone Duo closed: UIKit renders it in the system vertical bar).
+  bool get nativeTabsShown => _nativeTabsShown;
+
+  @visibleForTesting
+  void debugSetNativeTabsShown(bool shown) {
+    _nativeTabsShown = shown;
+    notifyListeners();
+  }
+
+  String? _lastTabsCall;
+
+  /// Sends the tabs (title + SF Symbol), the selected index and whether the
+  /// native tab bar should be shown. Flutter keeps its own navigation until
+  /// the native side confirms it is showing.
+  Future<void> syncNativeTabs({
+    required List<({String title, String symbol})> tabs,
+    required int selected,
+    required bool visible,
+  }) async {
+    if (!_started || kIsWeb || defaultTargetPlatform != TargetPlatform.iOS) {
+      return;
+    }
+    final args = {
+      'tabs': [
+        for (final t in tabs) {'title': t.title, 'symbol': t.symbol},
+      ],
+      'selected': selected,
+      'visible': visible,
+    };
+    final key = args.toString();
+    if (key == _lastTabsCall) return;
+    _lastTabsCall = key;
+    var shown = false;
+    try {
+      shown = await _channel.invokeMethod<bool>('setTabs', args) ?? false;
+    } on MissingPluginException {
+      shown = false;
+    } on PlatformException {
+      shown = false;
+    }
+    if (shown != _nativeTabsShown) {
+      _nativeTabsShown = shown;
+      notifyListeners();
+    }
+  }
 
   void _apply(Object? raw) {
     if (raw is Map) _setInfo(FoldInfo.fromMap(raw));

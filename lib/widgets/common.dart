@@ -5,9 +5,23 @@ import '../theme/app_theme.dart';
 
 const kPagePadding = EdgeInsets.symmetric(horizontal: 20);
 
+/// Page side padding: the 20pt page margin plus any horizontal safe area
+/// (iPhone Duo vertical status bar, fold half, camera housing), so every
+/// block in a pane shares one content edge while backgrounds stay
+/// full-bleed.
+EdgeInsets pagePadding(BuildContext context) {
+  final pad = MediaQuery.paddingOf(context);
+  return EdgeInsets.only(left: pad.left + 20, right: pad.right + 20);
+}
+
 /// Small rounded label, like the site's "AI & Agentic" eyebrow chips.
 class Eyebrow extends StatelessWidget {
-  const Eyebrow(this.text, {super.key, this.color = MfColors.blue700, this.background = MfColors.blue50});
+  const Eyebrow(
+    this.text, {
+    super.key,
+    this.color = MfColors.blue700,
+    this.background = MfColors.blue50,
+  });
 
   final String text;
   final Color color;
@@ -23,14 +37,23 @@ class Eyebrow extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }
 }
 
 class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, this.eyebrow, required this.title, this.body});
+  const SectionHeader({
+    super.key,
+    this.eyebrow,
+    required this.title,
+    this.body,
+  });
 
   final String? eyebrow;
   final String title;
@@ -96,7 +119,12 @@ class FeatureCard extends StatelessWidget {
 }
 
 class StepTile extends StatelessWidget {
-  const StepTile(this.step, {super.key, this.accent = MfColors.blue600, this.isLast = false});
+  const StepTile(
+    this.step, {
+    super.key,
+    this.accent = MfColors.blue600,
+    this.isLast = false,
+  });
 
   final ProcessStep step;
   final Color accent;
@@ -174,9 +202,13 @@ class TagWrap extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
-              color: dark ? Colors.white.withValues(alpha: 0.08) : MfColors.slate50,
+              color: dark
+                  ? Colors.white.withValues(alpha: 0.08)
+                  : MfColors.slate50,
               border: Border.all(
-                color: dark ? Colors.white.withValues(alpha: 0.14) : const Color(0xFFE2E8F0),
+                color: dark
+                    ? Colors.white.withValues(alpha: 0.14)
+                    : const Color(0xFFE2E8F0),
               ),
               borderRadius: BorderRadius.circular(999),
             ),

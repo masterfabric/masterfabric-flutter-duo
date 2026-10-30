@@ -48,7 +48,7 @@ class _Hero extends StatelessWidget {
           colors: [MfColors.blue50, Colors.white],
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+      padding: pagePadding(context).copyWith(top: 28),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -70,41 +70,72 @@ class _Hero extends StatelessWidget {
           const Gap(16),
           Text(SiteContent.heroBody, style: t.bodyLarge),
           const Gap(22),
-          Row(
-            children: [
-              Expanded(
-                child: FilledButton(
-                  onPressed: () => onNavigate(3),
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                  ),
-                  child: const Text('Start your project'),
+          LayoutBuilder(
+            builder: (context, c) {
+              final start = FilledButton(
+                onPressed: () => onNavigate(3),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => onNavigate(1),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(50),
-                    backgroundColor: Colors.white,
-                  ),
-                  child: const Text('Our services'),
+                child: const Text('Start your project', maxLines: 1),
+              );
+              final services = OutlinedButton(
+                onPressed: () => onNavigate(1),
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(50),
+                  backgroundColor: Colors.white,
                 ),
-              ),
-            ],
+                child: const Text('Our services', maxLines: 1),
+              );
+              // Narrow panes (Duo outer display) stack the CTAs so their
+              // labels never wrap.
+              if (c.maxWidth < 400) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [start, const Gap(10), services],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(child: start),
+                  const SizedBox(width: 10),
+                  Expanded(child: services),
+                ],
+              );
+            },
           ),
           const Gap(24),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: 1.45,
-            children: [
-              for (final h in SiteContent.heroHighlights) _HighlightTile(h),
-            ],
+          // Rows of two equal-height cards that size to their content
+          // (a fixed aspect-ratio grid clipped the copy on narrow panes).
+          LayoutBuilder(
+            builder: (context, c) {
+              const items = SiteContent.heroHighlights;
+              // One card per row on narrow panes so titles never break
+              // mid-word; otherwise rows of two equal-height cards.
+              final perRow = c.maxWidth < 340 ? 1 : 2;
+              return Column(
+                children: [
+                  for (var i = 0; i < items.length; i += perRow) ...[
+                    if (i > 0) const Gap(10),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var j = 0; j < perRow; j++) ...[
+                            if (j > 0) const SizedBox(width: 10),
+                            Expanded(
+                              child: i + j < items.length
+                                  ? _HighlightTile(items[i + j])
+                                  : const SizedBox.shrink(),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -124,34 +155,18 @@ class _HighlightTile extends StatelessWidget {
         padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(feature.icon, color: MfColors.blue600, size: 22),
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    feature.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    feature.body,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: MfColors.slate500,
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 10),
+            Text(
+              feature.title,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+            ),
+            const SizedBox(height: 3),
+            Text(
+              feature.body,
+              style: const TextStyle(fontSize: 12.5, color: MfColors.slate500),
             ),
           ],
         ),
@@ -167,7 +182,7 @@ class _ClaudePartner extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Padding(
-      padding: kPagePadding,
+      padding: pagePadding(context),
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -244,7 +259,7 @@ class _ClaudeCodeTerminal extends StatelessWidget {
       height: 1.6,
     );
     return Padding(
-      padding: kPagePadding,
+      padding: pagePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -400,7 +415,7 @@ class _AiFirst extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Padding(
-      padding: kPagePadding,
+      padding: pagePadding(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -436,7 +451,7 @@ class _StartProjectCta extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Padding(
-      padding: kPagePadding,
+      padding: pagePadding(context),
       child: Container(
         padding: const EdgeInsets.all(22),
         decoration: BoxDecoration(

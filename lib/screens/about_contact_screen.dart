@@ -13,17 +13,18 @@ class AboutContactScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return ListView(
-      padding: EdgeInsets.fromLTRB(20, 24, 20, MediaQuery.paddingOf(context).bottom + 24),
+      padding: pagePadding(context)
+          .copyWith(top: 24, bottom: MediaQuery.paddingOf(context).bottom + 24),
       children: [
         const SectionHeader(
           eyebrow: 'Start a conversation',
           title: 'Get in Touch',
-          body:
-              "Ready to start your project? Send us the brief and we'll get back to you within 24 hours.",
+          body: "Ready to start your project? Send us the brief and we'll get back to you within 24 hours.",
         ),
         const Gap(18),
         FilledButton.icon(
-          onPressed: () => openLink(context, 'https://masterfabric.co/contact/'),
+          onPressed: () =>
+              openLink(context, 'https://masterfabric.co/contact/'),
           style: FilledButton.styleFrom(
             backgroundColor: MfColors.blue600,
             minimumSize: const Size.fromHeight(52),
@@ -34,7 +35,9 @@ class AboutContactScreen extends StatelessWidget {
         const Gap(10),
         OutlinedButton.icon(
           onPressed: () => openLink(context, 'mailto:info@masterfabric.co'),
-          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
+          ),
           icon: const Icon(Icons.mail_outline_rounded, size: 18),
           label: const Text('info@masterfabric.co'),
         ),
@@ -44,7 +47,8 @@ class AboutContactScreen extends StatelessWidget {
             children: [
               for (var i = 0; i < SiteContent.contactLinks.length; i++) ...[
                 _LinkTile(SiteContent.contactLinks[i]),
-                if (i != SiteContent.contactLinks.length - 1) const Divider(height: 1, indent: 64),
+                if (i != SiteContent.contactLinks.length - 1)
+                  const Divider(height: 1, indent: 64),
               ],
             ],
           ),
@@ -56,7 +60,11 @@ class AboutContactScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InfoRow(Icons.location_on_outlined, 'Office', SiteContent.address),
+                _InfoRow(
+                  Icons.location_on_outlined,
+                  'Office',
+                  SiteContent.address,
+                ),
                 const Gap(14),
                 _InfoRow(
                   Icons.schedule_rounded,
@@ -95,7 +103,9 @@ class AboutContactScreen extends StatelessWidget {
                 onPressed: () => openLink(context, l.url),
                 backgroundColor: MfColors.slate50,
                 side: const BorderSide(color: Color(0xFFE2E8F0)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
               ),
           ],
         ),
@@ -127,21 +137,44 @@ class _LinkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: MfColors.blue50,
-          borderRadius: BorderRadius.circular(10),
+    // ListTile wraps itself in a SafeArea; the page already applied the
+    // side insets, so don't let it apply them again.
+    return MediaQuery.removePadding(
+      context: context,
+      removeLeft: true,
+      removeRight: true,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+        leading: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: MfColors.blue50,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(item.icon, color: MfColors.blue600, size: 20),
         ),
-        child: Icon(item.icon, color: MfColors.blue600, size: 20),
+        title: Text(
+          item.label,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+        ),
+        // Addresses/URLs must stay whole: shrink to fit instead of
+        // breaking mid-word on narrow panes.
+        subtitle: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            item.value,
+            maxLines: 1,
+            style: const TextStyle(color: MfColors.slate500, fontSize: 13),
+          ),
+        ),
+        trailing: const Icon(
+          Icons.chevron_right_rounded,
+          color: MfColors.slate400,
+        ),
+        onTap: () => openLink(context, item.url),
       ),
-      title: Text(item.label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-      subtitle: Text(item.value, style: const TextStyle(color: MfColors.slate500, fontSize: 13)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: MfColors.slate400),
-      onTap: () => openLink(context, item.url),
     );
   }
 }
@@ -164,9 +197,22 @@ class _InfoRow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
               const SizedBox(height: 2),
-              Text(value, style: const TextStyle(color: MfColors.slate600, fontSize: 13.5, height: 1.4)),
+              Text(
+                value,
+                style: const TextStyle(
+                  color: MfColors.slate600,
+                  fontSize: 13.5,
+                  height: 1.4,
+                ),
+              ),
             ],
           ),
         ),

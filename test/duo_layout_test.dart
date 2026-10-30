@@ -142,8 +142,17 @@ void main() {
       find.byKey(const ValueKey('mf-content-pane')),
     );
     expect((nav.width - content.width).abs(), lessThanOrEqualTo(1));
-    expect(nav.right, lessThanOrEqualTo(455.5));
-    expect(content.left, greaterThanOrEqualTo(495.5));
+    // Backgrounds meet at the fold centre; text never enters the fold.
+    expect(nav.right, closeTo(475.5, 1));
+    for (final e in find
+        .descendant(
+          of: find.byKey(const ValueKey('mf-nav-pane')),
+          matching: find.byType(Text),
+        )
+        .evaluate()) {
+      final r = tester.getRect(find.byWidget(e.widget).first);
+      expect(r.right, lessThanOrEqualTo(455.5));
+    }
   });
 
   testWidgets('flat: seam splits the panes evenly at the inactive division', (
@@ -157,13 +166,14 @@ void main() {
     expect((nav.width - content.width).abs(), lessThanOrEqualTo(2));
   });
 
-  testWidgets('open: rail top aligns with the section list header', (
+  testWidgets('open: one navigation only, clear of the display corner', (
     tester,
   ) async {
     await _pump(tester, _cases[3]);
-    final rail = tester.getRect(find.byKey(const ValueKey('mf-duo-rail')));
+    expect(find.byType(DuoNavRail), findsNothing);
+    expect(find.byType(PillNavBar), findsNothing);
     final header = tester.getRect(find.text('Explore'));
-    expect((rail.top - header.top).abs(), lessThanOrEqualTo(4));
+    expect(header.left, greaterThanOrEqualTo(20));
   });
 
   testWidgets('outer display with a vertical bar uses the side rail', (

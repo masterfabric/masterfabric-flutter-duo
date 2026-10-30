@@ -51,6 +51,8 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
     case "getState":
       installHingeInteractionIfNeeded()
       result(currentState())
+    case "setTabs":
+      result(setTabs(call.arguments as? [String: Any] ?? [:]))
     default:
       result(FlutterMethodNotImplemented)
     }
@@ -84,6 +86,29 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
       }
       view.addInteraction(interaction)
     }
+  }
+
+  // MARK: Native tab bar (iPhone Duo vertical bar)
+
+  private lazy var tabOverlay = NativeTabOverlay { [weak self] index in
+    self?.channel.invokeMethod("tabSelected", arguments: index)
+  }
+
+  /// Native iOS tab bar for the closed (outer) display. The
+  /// FlutterViewController stays the window root (swapping in a
+  /// UITabBarController blanked the screen on the Duo sim), and a real
+  /// `UITabBar` is overlaid at the bottom of the Flutter view, inside its
+  /// safe area, clear of the system vertical bar. Dart sends the tabs, the
+  /// selection and visibility; taps come back as `tabSelected`. Returns
+  /// whether the bar is showing.
+  private func setTabs(_ args: [String: Any]) -> Bool {
+    guard let view = flutterView else { return false }
+    let tabs = (args["tabs"] as? [[String: Any]] ?? []).map {
+      ($0["title"] as? String ?? "", $0["symbol"] as? String ?? "circle")
+    }
+    return tabOverlay.apply(
+      on: view, tabs: tabs, selected: args["selected"] as? Int ?? 0,
+      visible: args["visible"] as? Bool ?? false)
   }
 
   private func pushUpdate() {
@@ -123,5 +148,62 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
       }
     }
     return state
+  }
+}
+
+/// A real `UITabBar` pinned to the bottom of the host view's safe area.
+final class NativeTabOverlay: NSObject, UITabBarDelegate {
+  static let barHeight: CGFloat = 49
+  private let onSelect: (Int) -> Void
+  private var bar: UITabBar?
+  private var signature: [String] = []
+  private var observation: NSKeyValueObservation?
+
+  init(onSelect: @escaping (Int) -> Void) { self.onSelect = onSelect }
+
+  func apply(on host: UIView, tabs: [(String, String)], selected: Int, visible: Bool)
+    -> Bool
+  {
+    let bar = self.bar ?? makeBar(on: host)
+    let sig = tabs.map { "\($0.0)|\($0.1)" }
+    if sig != signature {
+      signature = sig
+      bar.items = tabs.enumerated().map { i, t in
+        UITabBarItem(title: t.0, image: UIImage(systemName: t.1), tag: i)
+      }
+    }
+    if let items = bar.items, items.indices.contains(selected) {
+      bar.selectedItem = items[selected]
+    }
+    let show = visible && !(bar.items ?? []).isEmpty
+    bar.isHidden = !show
+    layout(bar, in: host)
+    return show
+  }
+
+  private func makeBar(on host: UIView) -> UITabBar {
+    let bar = UITabBar()
+    bar.delegate = self
+    bar.isHidden = true
+    host.addSubview(bar)
+    self.bar = bar
+    observation = host.observe(\.bounds, options: [.new]) { [weak self, weak bar] host, _ in
+      guard let self, let bar else { return }
+      DispatchQueue.main.async { self.layout(bar, in: host) }
+    }
+    return bar
+  }
+
+  private func layout(_ bar: UITabBar, in host: UIView) {
+    let safe = host.safeAreaInsets
+    let height = Self.barHeight + safe.bottom
+    bar.frame = CGRect(
+      x: safe.left, y: host.bounds.height - height,
+      width: max(0, host.bounds.width - safe.left - safe.right), height: height)
+    host.bringSubviewToFront(bar)
+  }
+
+  func tabBar(_ tabBar: UITabBar, didSelect item: UITabBarItem) {
+    onSelect(item.tag)
   }
 }

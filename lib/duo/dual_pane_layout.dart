@@ -151,19 +151,29 @@ class DualPane extends StatelessWidget {
     final size = mq.size;
     final h = geometry.hinge;
 
-    Widget pane(Widget child, Offset origin, Size paneSize, EdgeInsets keep) {
+    // Each pane's background bleeds to the centre of the fold; the fold
+    // half on its side becomes padding so only content keeps clear of it.
+    Widget pane(
+      Widget child,
+      Offset origin,
+      Size paneSize,
+      EdgeInsets keep,
+      EdgeInsets fold,
+    ) {
       EdgeInsets clip(EdgeInsets e) => EdgeInsets.fromLTRB(
         keep.left > 0 ? e.left : 0,
         keep.top > 0 ? e.top : 0,
         keep.right > 0 ? e.right : 0,
         keep.bottom > 0 ? e.bottom : 0,
       );
-      final occ = occlusionInsets(origin & paneSize, occlusions);
+      final rect = origin & paneSize;
+      final safe = clip(mq.padding) + fold;
+      final occ = occlusionInsets(rect, occlusions, safe);
       return MediaQuery(
         data: mq.copyWith(
           size: paneSize,
-          padding: maxInsets(clip(mq.padding), occ),
-          viewPadding: maxInsets(clip(mq.viewPadding), occ),
+          padding: maxInsets(safe, occ),
+          viewPadding: maxInsets(clip(mq.viewPadding) + fold, occ),
           viewInsets: clip(mq.viewInsets),
           displayFeatures: const [],
         ),
@@ -178,46 +188,54 @@ class DualPane extends StatelessWidget {
     if (geometry.axis == PaneAxis.horizontal) {
       final leftW = h.left.clamp(0.0, size.width);
       final rightW = (size.width - h.right).clamp(0.0, size.width);
-      return Row(
+      final half = (size.width - leftW - rightW) / 2;
+      return Stack(
         children: [
-          pane(
-            primary,
-            Offset.zero,
-            Size(leftW, size.height),
-            const EdgeInsets.fromLTRB(1, 1, 0, 1),
-          ),
-          SizedBox(
-            width: (size.width - leftW - rightW),
-            child: ColoredBox(color: hingeColor),
-          ),
-          pane(
-            secondary,
-            Offset(size.width - rightW, 0),
-            Size(rightW, size.height),
-            const EdgeInsets.fromLTRB(0, 1, 1, 1),
+          Positioned.fill(child: ColoredBox(color: hingeColor)),
+          Row(
+            children: [
+              pane(
+                primary,
+                Offset.zero,
+                Size(leftW + half, size.height),
+                const EdgeInsets.fromLTRB(1, 1, 0, 1),
+                EdgeInsets.only(right: half),
+              ),
+              pane(
+                secondary,
+                Offset(size.width - rightW - half, 0),
+                Size(rightW + half, size.height),
+                const EdgeInsets.fromLTRB(0, 1, 1, 1),
+                EdgeInsets.only(left: half),
+              ),
+            ],
           ),
         ],
       );
     }
     final topH = h.top.clamp(0.0, size.height);
     final bottomH = (size.height - h.bottom).clamp(0.0, size.height);
-    return Column(
+    final half = (size.height - topH - bottomH) / 2;
+    return Stack(
       children: [
-        pane(
-          secondary,
-          Offset.zero,
-          Size(size.width, topH),
-          const EdgeInsets.fromLTRB(1, 1, 1, 0),
-        ),
-        SizedBox(
-          height: (size.height - topH - bottomH),
-          child: ColoredBox(color: hingeColor),
-        ),
-        pane(
-          primary,
-          Offset(0, size.height - bottomH),
-          Size(size.width, bottomH),
-          const EdgeInsets.fromLTRB(1, 0, 1, 1),
+        Positioned.fill(child: ColoredBox(color: hingeColor)),
+        Column(
+          children: [
+            pane(
+              secondary,
+              Offset.zero,
+              Size(size.width, topH + half),
+              const EdgeInsets.fromLTRB(1, 1, 1, 0),
+              EdgeInsets.only(bottom: half),
+            ),
+            pane(
+              primary,
+              Offset(0, size.height - bottomH - half),
+              Size(size.width, bottomH + half),
+              const EdgeInsets.fromLTRB(1, 0, 1, 1),
+              EdgeInsets.only(top: half),
+            ),
+          ],
         ),
       ],
     );
@@ -225,26 +243,32 @@ class DualPane extends StatelessWidget {
 }
 
 /// Insets that keep content inside [pane] clear of the [occlusions] it
-/// overlaps (e.g. the iPhone Duo camera housings). Each overlapping region
-/// pushes in the pane edge it is closest to.
-EdgeInsets occlusionInsets(Rect pane, Iterable<Rect> occlusions) {
+/// overlaps (e.g. the iPhone Duo camera housings). Regions already inside
+/// the system safe area ([safe], in pane-local insets) cost nothing; every
+/// other region pushes in whichever pane edge clears it most cheaply.
+EdgeInsets occlusionInsets(
+  Rect pane,
+  Iterable<Rect> occlusions, [
+  EdgeInsets safe = EdgeInsets.zero,
+]) {
   var l = 0.0, t = 0.0, r = 0.0, b = 0.0;
+  final usable = safe.deflateRect(pane);
   for (final o in occlusions) {
-    final i = pane.intersect(o);
+    final i = usable.intersect(o);
     if (i.width <= 0 || i.height <= 0) continue;
-    final dTop = i.top - pane.top;
-    final dBottom = pane.bottom - i.bottom;
-    final dLeft = i.left - pane.left;
-    final dRight = pane.right - i.right;
-    final m = [dTop, dBottom, dLeft, dRight].reduce(math.min);
-    if (m == dTop) {
-      t = math.max(t, i.bottom - pane.top);
-    } else if (m == dBottom) {
-      b = math.max(b, pane.bottom - i.top);
-    } else if (m == dLeft) {
-      l = math.max(l, i.right - pane.left);
+    final top = i.bottom - pane.top;
+    final bottom = pane.bottom - i.top;
+    final left = i.right - pane.left;
+    final right = pane.right - i.left;
+    final m = [top, bottom, left, right].reduce(math.min);
+    if (m == top) {
+      t = math.max(t, top);
+    } else if (m == bottom) {
+      b = math.max(b, bottom);
+    } else if (m == left) {
+      l = math.max(l, left);
     } else {
-      r = math.max(r, pane.right - i.left);
+      r = math.max(r, right);
     }
   }
   return EdgeInsets.fromLTRB(l, t, r, b);
