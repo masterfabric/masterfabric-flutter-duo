@@ -36,6 +36,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   url_launcher: ^6.3.3
   flutter_svg: ^2.3.2
+  flutter_bloc: ^9.1.1
+  equatable: ^3.0.0
+  get_it: ^9.3.0
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +51,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  bloc_test: ^10.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
