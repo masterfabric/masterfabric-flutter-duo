@@ -3,12 +3,11 @@
 // content clear of the fold.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:hello_flutter/duo/duo_bridge.dart';
-import 'package:hello_flutter/duo/duo_nav_rail.dart';
-import 'package:hello_flutter/duo/fold_info.dart';
-import 'package:hello_flutter/main.dart';
-import 'package:hello_flutter/widgets/pill_nav_bar.dart';
+import 'package:hello_flutter/app/app.dart';
+import 'package:hello_flutter/app/helper/layout/duo/duo_bridge.dart';
+import 'package:hello_flutter/app/helper/layout/duo/duo_nav_rail.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
+import 'package:hello_flutter/app/widgets/pill_nav_bar.dart';
 
 class _Case {
   const _Case(this.name, this.size, this.pad, this.fold);
@@ -144,12 +143,13 @@ void main() {
     expect((nav.width - content.width).abs(), lessThanOrEqualTo(1));
     // Backgrounds meet at the fold centre; text never enters the fold.
     expect(nav.right, closeTo(475.5, 1));
-    for (final e in find
-        .descendant(
-          of: find.byKey(const ValueKey('mf-nav-pane')),
-          matching: find.byType(Text),
-        )
-        .evaluate()) {
+    for (final e
+        in find
+            .descendant(
+              of: find.byKey(const ValueKey('mf-nav-pane')),
+              matching: find.byType(Text),
+            )
+            .evaluate()) {
       final r = tester.getRect(find.byWidget(e.widget).first);
       expect(r.right, lessThanOrEqualTo(455.5));
     }

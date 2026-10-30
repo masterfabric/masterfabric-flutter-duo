@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:hello_flutter/app/models/site_content.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/widgets/common.dart';
+import 'package:hello_flutter/app/widgets/links.dart';
 
-import '../data/site_content.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common.dart';
-import '../widgets/links.dart';
+/// Home section: hero, Claude partnership and highlights.
+class HomeView extends StatelessWidget {
+  /// Creates the home view.
+  const HomeView({super.key, required this.onNavigate});
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key, required this.onNavigate});
-
+  /// Opens another section by index (CTA buttons).
   final ValueChanged<int> onNavigate;
 
   @override

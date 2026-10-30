@@ -2,45 +2,86 @@
 // (llm.txt v1.5.0, last updated 2026-10-29). Do not add facts that are not on the site.
 import 'package:flutter/material.dart';
 
+/// A titled feature with an icon.
 class Feature {
+  /// Creates a feature.
   const Feature(this.icon, this.title, this.body);
+
+  /// Icon.
   final IconData icon;
+
+  /// Title.
   final String title;
+
+  /// Body.
   final String body;
 }
 
+/// One numbered step of a process.
 class ProcessStep {
+  /// Creates a step.
   const ProcessStep(this.number, this.title, this.body);
+
+  /// Number.
   final String number;
+
+  /// Title.
   final String title;
+
+  /// Body.
   final String body;
 }
 
+/// A client shown in the Work section.
 class ClientLogo {
+  /// Creates a client entry.
   const ClientLogo(this.name, this.asset, this.url);
+
+  /// Name.
   final String name;
+
+  /// Asset.
   final String asset;
+
+  /// Url.
   final String url;
 }
 
+/// A contact / site link with an icon.
 class LinkItem {
+  /// Creates a link.
   const LinkItem(this.icon, this.label, this.value, this.url);
+
+  /// Icon.
   final IconData icon;
+
+  /// Label.
   final String label;
+
+  /// Value.
   final String value;
+
+  /// Url.
   final String url;
 }
 
+/// Static copy of masterfabric.co shown in the app.
 class SiteContent {
   // ---------- Hero ----------
+  /// Hero eyebrow.
   static const heroEyebrow = 'Custom Software Development Studio';
+
+  /// Hero title.
   static const heroTitle =
       'Custom Software,\nAI Transformation,\nBuilt to Brief';
+
+  /// Hero body.
   static const heroBody =
       'We build custom software and AI transformation systems for '
       'institutions and private clients. Not a packaged product — the '
       'bespoke software you asked for.';
 
+  /// Hero highlights.
   static const heroHighlights = [
     Feature(
       Icons.auto_awesome,
@@ -61,12 +102,16 @@ class SiteContent {
   ];
 
   // ---------- Claude Partner Network ----------
+  /// Claude title.
   static const claudeTitle = 'We are a Claude Partner Network partner';
+
+  /// Claude body.
   static const claudeBody =
       'MasterFabric designs and ships custom software with Claude. '
       'Institutions and private clients get a system written around their '
       'brief — planned, built, and reviewed with Claude in the loop.';
 
+  /// Claude steps.
   static const claudeSteps = [
     ProcessStep(
       '01',
@@ -90,6 +135,7 @@ class SiteContent {
     ),
   ];
 
+  /// Claude code benefits.
   static const claudeCodeBenefits = [
     Feature(
       Icons.check_rounded,
@@ -109,10 +155,12 @@ class SiteContent {
   ];
 
   // ---------- AI-first ----------
+  /// Ai first body.
   static const aiFirstBody =
       'We build custom software and AI transformation systems with an agentic, '
       'platform-based approach — for institutions and private clients.';
 
+  /// Ai first.
   static const aiFirst = [
     Feature(
       Icons.lightbulb_outline_rounded,
@@ -131,6 +179,7 @@ class SiteContent {
     ),
   ];
 
+  /// Sectors.
   static const sectors = [
     'Healthcare',
     'Fintech',
@@ -140,11 +189,13 @@ class SiteContent {
   ];
 
   // ---------- What we are hired to build ----------
+  /// Hired body.
   static const hiredBody =
       'MasterFabric is the company institutions and private clients call when '
       'they need bespoke software — especially requested AI transformations. '
       'We do not sell a packaged platform. We write the system that was asked for.';
 
+  /// Hired for.
   static const hiredFor = [
     Feature(
       Icons.account_balance_outlined,
@@ -168,6 +219,7 @@ class SiteContent {
     ),
   ];
 
+  /// Core services.
   static const coreServices = [
     'AI transformation: production assistants, automation, document intelligence, and decision support',
     'Custom / bespoke software for one organization',
@@ -180,6 +232,7 @@ class SiteContent {
     'CI/CD, handover, training, and ongoing maintenance',
   ];
 
+  /// Process.
   static const process = [
     ProcessStep(
       '1',
@@ -200,6 +253,7 @@ class SiteContent {
   ];
 
   // ---------- Technologies ----------
+  /// Tech groups.
   static const techGroups = <String, List<String>>{
     'Editors & IDEs': ['Cursor', 'VS Code', 'JetBrains'],
     'Version control': ['GitHub', 'GitLab'],
@@ -210,6 +264,7 @@ class SiteContent {
   };
 
   // ---------- App design & growth ----------
+  /// Growth.
   static const growth = [
     Feature(
       Icons.touch_app_outlined,
@@ -243,6 +298,7 @@ class SiteContent {
     ),
   ];
 
+  /// Supercharge.
   static const supercharge = [
     Feature(
       Icons.timer_outlined,
@@ -262,6 +318,7 @@ class SiteContent {
   ];
 
   // ---------- Work / clients ----------
+  /// Clients.
   static const clients = [
     ClientLogo(
       'Infotech Academy',
@@ -287,6 +344,7 @@ class SiteContent {
     ClientLogo('Veripark', 'assets/logos/veripark.png', 'https://veripark.com'),
   ];
 
+  /// Academy tags.
   static const academyTags = [
     'Agentic AI Developer',
     'AI SDLC',
@@ -295,11 +353,17 @@ class SiteContent {
   ];
 
   // ---------- Company / contact ----------
+  /// Legal name.
   static const legalName = 'MasterFabric Information Technology Inc.';
+
+  /// Address.
   static const address =
       'Hacı Bayram Mah. Mahmut Atalay Sk. L Blok No: 6 İç Kapı No: 227, Altındağ / Ankara, Turkey';
+
+  /// Hours.
   static const hours = ['Monday–Friday 09:00–18:00', 'Saturday 10:00–16:00'];
 
+  /// Contact links.
   static const contactLinks = [
     LinkItem(
       Icons.mail_outline_rounded,
@@ -339,6 +403,7 @@ class SiteContent {
     ),
   ];
 
+  /// Site links.
   static const siteLinks = [
     LinkItem(
       Icons.miscellaneous_services_outlined,

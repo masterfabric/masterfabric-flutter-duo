@@ -2,38 +2,64 @@ import 'package:flutter/material.dart';
 
 /// Colors taken from masterfabric.co (Tailwind slate/blue palette + Claude accent).
 class MfColors {
+  /// Slate900 color.
   static const slate900 = Color(0xFF0F172A);
+
+  /// Slate800 color.
   static const slate800 = Color(0xFF1E293B); // logo color
+  /// Slate600 color.
   static const slate600 = Color(0xFF475569);
+
+  /// Slate500 color.
   static const slate500 = Color(0xFF64748B);
+
+  /// Slate400 color.
   static const slate400 = Color(0xFF94A3B8);
+
+  /// Slate100 color.
   static const slate100 = Color(0xFFF1F5F9);
+
+  /// Slate50 color.
   static const slate50 = Color(0xFFF8FAFC);
+
+  /// Blue700 color.
   static const blue700 = Color(0xFF1D4ED8);
+
+  /// Blue600 color.
   static const blue600 = Color(0xFF2563EB);
+
+  /// Blue100 color.
   static const blue100 = Color(0xFFDBEAFE);
+
+  /// Blue50 color.
   static const blue50 = Color(0xFFEFF6FF);
+
+  /// Claude color.
   static const claude = Color(0xFFD97757);
+
+  /// Claude soft color.
   static const claudeSoft = Color(0xFFFBF1EC);
+
+  /// Claude ink color.
   static const claudeInk = Color(0xFF1F1E1D);
+
+  /// Terminal color.
   static const terminal = Color(0xFF0B0D17);
 }
 
+/// Material theme for the app.
 class AppTheme {
+  /// Light theme built on the MasterFabric palette.
   static ThemeData light() {
-    final scheme =
-        ColorScheme.fromSeed(
-          seedColor: MfColors.blue600,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: MfColors.blue600,
-          onPrimary: Colors.white,
-          surface: Colors.white,
-          onSurface: MfColors.slate900,
-          onSurfaceVariant: MfColors.slate600,
-          outlineVariant: MfColors.slate100,
-          secondary: MfColors.claude,
-        );
+    final scheme = ColorScheme.fromSeed(seedColor: MfColors.blue600).copyWith(
+      primary: MfColors.blue600,
+      onPrimary: Colors.white,
+      surface: Colors.white,
+      onSurface: MfColors.slate900,
+      onSurfaceVariant: MfColors.slate600,
+      outlineVariant: MfColors.slate100,
+      secondary: MfColors.claude,
+    );
 
     final base = ThemeData(useMaterial3: true, colorScheme: scheme);
     final text = base.textTheme.apply(

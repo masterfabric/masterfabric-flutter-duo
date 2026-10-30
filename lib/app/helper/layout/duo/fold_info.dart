@@ -3,11 +3,35 @@ import 'dart:ui' show Rect;
 import 'package:flutter/foundation.dart';
 
 /// Hinge status as reported by UIKit's `UIHinge.Status` (iOS 27.1+).
-enum HingeStatus { none, unknown, closed, partiallyOpen, fullyOpen }
+enum HingeStatus {
+  /// Not a foldable (or no native bridge).
+  none,
+
+  /// Foldable, state not reported yet.
+  unknown,
+
+  /// Folded: only the outer display is in use.
+  closed,
+
+  /// Partly open (book / tabletop).
+  partiallyOpen,
+
+  /// Fully open, flat.
+  fullyOpen,
+}
 
 /// `UITraitCollection.verticalBarEdge` (iOS 27.1+): the edge where the
 /// system places its vertical bar (status bar / toolbars) on iPhone Duo.
-enum VerticalBarEdge { unspecified, leading, trailing }
+enum VerticalBarEdge {
+  /// No vertical bar (regular iPhone layout).
+  unspecified,
+
+  /// Bar on the leading edge.
+  leading,
+
+  /// Bar on the trailing edge.
+  trailing,
+}
 
 /// How the opened device is being held, derived from the hinge and fold.
 enum DuoPosture {
@@ -31,11 +55,16 @@ enum DuoPosture {
 /// relative to the Flutter view.
 @immutable
 class ReservedRegion {
+  /// Creates a region covering [rect].
   const ReservedRegion(this.rect, {required this.active});
 
+  /// Region in the Flutter view, in logical pixels.
   final Rect rect;
+
+  /// Whether the region is currently active (e.g. camera housing in use).
   final bool active;
 
+  /// Parses a `{x, y, width, height, active}` channel map.
   static ReservedRegion? fromMap(Object? raw) {
     if (raw is! Map) return null;
     double v(String k) => (raw[k] as num?)?.toDouble() ?? 0;
@@ -56,6 +85,7 @@ class ReservedRegion {
 /// Snapshot of the iPhone Duo fold state bridged from native code.
 @immutable
 class FoldInfo {
+  /// Creates fold info; defaults describe a non-Duo device.
   const FoldInfo({
     this.supported = false,
     this.hinge = HingeStatus.none,
@@ -67,16 +97,23 @@ class FoldInfo {
 
   /// True when the native side runs on iOS 27.1+ (reserved-region APIs exist).
   final bool supported;
+
+  /// Hinge state from `UIHingeInteraction`.
   final HingeStatus hinge;
 
   /// Hinge angle in degrees (0 = shut, 180 = flat); -1 when unknown.
   final double angle;
+
+  /// `reservedRegions(kind: .division)`: the fold line(s).
   final List<ReservedRegion> divisions;
+
+  /// `reservedRegions(kind: .occlusion)`: camera housings etc.
   final List<ReservedRegion> occlusions;
 
   /// Where UIKit puts its vertical bar; app chrome goes on the other side.
   final VerticalBarEdge verticalBarEdge;
 
+  /// No Duo hardware / no native bridge.
   static const none = FoldInfo();
 
   /// The fold that currently divides the view, if any.
@@ -104,6 +141,7 @@ class FoldInfo {
   /// device starts to fold.
   Rect? get anyDivision => divisions.isEmpty ? null : divisions.first.rect;
 
+  /// Posture derived from hinge state and angle.
   DuoPosture get posture {
     switch (hinge) {
       case HingeStatus.closed:
@@ -120,6 +158,7 @@ class FoldInfo {
     }
   }
 
+  /// Parses the `getState` / `update` channel payload.
   factory FoldInfo.fromMap(Map<Object?, Object?> m) {
     List<ReservedRegion> regions(Object? raw) => raw is List
         ? raw.map(ReservedRegion.fromMap).whereType<ReservedRegion>().toList()

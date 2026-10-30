@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:hello_flutter/app/models/site_content.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/widgets/common.dart';
+import 'package:hello_flutter/app/widgets/links.dart';
 
-import '../data/site_content.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common.dart';
-import '../widgets/links.dart';
-
-class ServicesScreen extends StatelessWidget {
-  const ServicesScreen({super.key});
+/// Services section: what MasterFabric builds.
+class ServicesView extends StatelessWidget {
+  /// Creates the services view.
+  const ServicesView({super.key});
 
   @override
   Widget build(BuildContext context) {

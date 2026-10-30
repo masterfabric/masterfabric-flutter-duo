@@ -1,128 +1,47 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hello_flutter/app/core/bloc/duo/duo_cubit.dart';
+import 'package:hello_flutter/app/core/bloc/duo/duo_state.dart';
+import 'package:hello_flutter/app/core/bloc/navigation/navigation_cubit.dart';
+import 'package:hello_flutter/app/helper/layout/duo/dual_pane_layout.dart';
+import 'package:hello_flutter/app/helper/layout/duo/duo_nav_rail.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/views/view_contact/contact_view.dart';
+import 'package:hello_flutter/app/views/view_home/home_view.dart';
+import 'package:hello_flutter/app/views/view_services/services_view.dart';
+import 'package:hello_flutter/app/views/view_shell/models/shell_section.dart';
+import 'package:hello_flutter/app/views/view_shell/widgets/section_list_widget.dart';
+import 'package:hello_flutter/app/views/view_work/work_view.dart';
+import 'package:hello_flutter/app/widgets/mf_logo.dart';
+import 'package:hello_flutter/app/widgets/pill_nav_bar.dart';
 
-import 'duo/duo_bridge.dart';
-import 'duo/dual_pane_layout.dart';
-import 'duo/duo_nav_rail.dart';
-import 'duo/fold_info.dart';
-import 'screens/about_contact_screen.dart';
-import 'screens/home_screen.dart';
-import 'screens/services_screen.dart';
-import 'screens/work_screen.dart';
-import 'theme/app_theme.dart';
-import 'widgets/mf_logo.dart';
-import 'widgets/pill_nav_bar.dart';
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  DuoBridge.instance.start();
-  runApp(const MasterFabricApp());
-}
-
-class MasterFabricApp extends StatelessWidget {
-  const MasterFabricApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'MasterFabric',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      home: const RootShell(),
-    );
-  }
-}
-
-class _Section {
-  const _Section(this.item, this.subtitle);
-  final PillNavItem item;
-  final String subtitle;
-}
-
-const _sections = [
-  _Section(
-    PillNavItem(
-      icon: Icons.home_outlined,
-      selectedIcon: Icons.home_rounded,
-      label: 'Home',
-    ),
-    'Software studio for mobile, web & AI',
-  ),
-  _Section(
-    PillNavItem(
-      icon: Icons.auto_awesome_outlined,
-      selectedIcon: Icons.auto_awesome,
-      label: 'Services',
-    ),
-    'What we design, build and ship',
-  ),
-  _Section(
-    PillNavItem(
-      icon: Icons.workspaces_outline,
-      selectedIcon: Icons.workspaces,
-      label: 'Work',
-    ),
-    'Clients, Academy & open source',
-  ),
-  _Section(
-    PillNavItem(
-      icon: Icons.mail_outline_rounded,
-      selectedIcon: Icons.mail_rounded,
-      label: 'Contact',
-    ),
-    'Start a project with us',
-  ),
-];
-
-class RootShell extends StatefulWidget {
-  const RootShell({super.key});
+/// The app shell: picks the navigation for the current iPhone Duo posture
+/// (native side tab bar, pill bar, section list or tabletop deck) and shows
+/// the selected section. State lives in [NavigationCubit] and [DuoCubit].
+class ShellView extends StatefulWidget {
+  /// Creates the shell.
+  const ShellView({super.key});
 
   @override
-  State<RootShell> createState() => _RootShellState();
+  State<ShellView> createState() => _ShellViewState();
 }
 
-class _RootShellState extends State<RootShell> {
-  late int _index = _initialTab();
+class _ShellViewState extends State<ShellView> {
+  int get _index => context.read<NavigationCubit>().state.index;
 
-  /// Allows opening a specific tab at launch (used for screenshots):
-  /// `flutter run --dart-define=MF_TAB=2`
-  static int _initialTab() {
-    const defined = String.fromEnvironment('MF_TAB');
-    final raw = defined.isNotEmpty ? defined : Platform.environment['MF_TAB'];
-    final value = int.tryParse(raw ?? '') ?? 0;
-    return value.clamp(0, 3);
-  }
-
-  void _goTo(int i) => setState(() => _index = i);
-
-  @override
-  void initState() {
-    super.initState();
-    DuoBridge.instance.onNativeTabSelected = (i) {
-      if (mounted && i != _index) _goTo(i);
-    };
-  }
-
-  @override
-  void dispose() {
-    DuoBridge.instance.onNativeTabSelected = null;
-    super.dispose();
-  }
-
-  /// SF Symbols for the native UIKit tab bar, in [_sections] order.
-  static const _symbols = ['house', 'sparkles', 'square.grid.2x2', 'envelope'];
+  void _goTo(int i) => context.read<NavigationCubit>().select(i);
 
   /// iPhone Duo closed: hand navigation to the native UIKit tab bar, which
   /// the system renders in its vertical bar on the outer display.
   void _syncNativeTabs(bool closed) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      DuoBridge.instance.syncNativeTabs(
+      context.read<DuoCubit>().syncNativeTabs(
         tabs: [
-          for (var i = 0; i < _sections.length; i++)
-            (title: _sections[i].item.label, symbol: _symbols[i]),
+          for (final s in kShellSections)
+            (title: s.item.label, symbol: s.symbol),
         ],
         selected: _index,
         visible: closed,
@@ -131,17 +50,17 @@ class _RootShellState extends State<RootShell> {
   }
 
   late final List<Widget> _pages = <Widget>[
-    HomeScreen(onNavigate: _goTo),
-    const ServicesScreen(),
-    const WorkScreen(),
-    const AboutContactScreen(),
+    HomeView(onNavigate: _goTo),
+    const ServicesView(),
+    const WorkView(),
+    const ContactView(),
   ];
 
   /// Global keys let each section keep its state (scroll offset, expanded
   /// cards…) when the page moves between the folded single-screen shell and
   /// the opened Duo panes: Apple asks for continuity across fold / unfold.
   final List<GlobalKey> _pageKeys = List.generate(
-    _sections.length,
+    kShellSections.length,
     (i) => GlobalKey(debugLabel: 'page$i'),
   );
 
@@ -153,13 +72,13 @@ class _RootShellState extends State<RootShell> {
     ],
   );
 
-  List<PillNavItem> get _items => [for (final s in _sections) s.item];
+  List<PillNavItem> get _items => [for (final s in kShellSections) s.item];
 
   PillNavBar _pillBar() =>
       PillNavBar(selectedIndex: _index, onSelected: _goTo, items: _items);
 
   Widget _contactButton() => FilledButton(
-    onPressed: () => _goTo(3),
+    onPressed: () => _goTo(NavigationCubit.contactIndex),
     style: FilledButton.styleFrom(
       visualDensity: VisualDensity.compact,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -169,10 +88,11 @@ class _RootShellState extends State<RootShell> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: DuoBridge.instance,
-      builder: (context, _) {
-        final fold = DuoBridge.instance.info;
+    // Rebuild on section changes and on posture / native tab bar changes.
+    context.watch<NavigationCubit>();
+    return BlocBuilder<DuoCubit, DuoState>(
+      builder: (context, duo) {
+        final fold = duo.info;
         final mq = MediaQuery.of(context);
         final geometry = DualPaneGeometry.resolve(mq, fold);
         _syncNativeTabs(!geometry.isDual && fold.hinge == HingeStatus.closed);
@@ -188,16 +108,16 @@ class _RootShellState extends State<RootShell> {
             padding: maxInsets(mq.padding, occ),
             viewPadding: maxInsets(mq.viewPadding, occ),
           ),
-          child: _single(fold),
+          child: _single(fold, nativeTabsShown: duo.nativeTabsShown),
         );
       },
     );
   }
 
   /// Folded / slab iPhone: the original single-screen layout, unchanged.
-  Widget _single(FoldInfo fold) {
+  Widget _single(FoldInfo fold, {required bool nativeTabsShown}) {
     // Native UIKit tab bar is the navigation: no Flutter rail / pill.
-    if (DuoBridge.instance.nativeTabsShown) {
+    if (nativeTabsShown) {
       // Closed Duo: the native side navbar (platform channel) in the
       // system's vertical bar is the only navigation. It lives in the side
       // safe area, which the content already insets by, so nothing sits
@@ -225,7 +145,9 @@ class _RootShellState extends State<RootShell> {
             appBar: AppBar(
               titleSpacing: 20,
               title: const MfWordmark(),
-              actions: [if (_index != 3) _contactButton()],
+              actions: [
+                if (_index != NavigationCubit.contactIndex) _contactButton(),
+              ],
               actionsPadding: const EdgeInsets.only(right: 20),
             ),
             body: Builder(
@@ -275,7 +197,7 @@ class _RootShellState extends State<RootShell> {
       appBar: AppBar(
         titleSpacing: 20,
         title: const MfWordmark(),
-        actions: [if (_index != 3) _contactButton()],
+        actions: [if (_index != NavigationCubit.contactIndex) _contactButton()],
         actionsPadding: const EdgeInsets.only(right: 20),
       ),
       body: _contentStack,
@@ -341,7 +263,7 @@ class _RootShellState extends State<RootShell> {
                   ),
                 ),
                 Expanded(
-                  child: _SectionList(selected: _index, onSelected: _goTo),
+                  child: SectionList(selected: _index, onSelected: _goTo),
                 ),
                 if (fold.hinge == HingeStatus.none)
                   SizedBox(height: pad.bottom)
@@ -430,14 +352,14 @@ class _RootShellState extends State<RootShell> {
                           spacing: gap,
                           runSpacing: gap,
                           children: [
-                            for (var i = 0; i < _sections.length; i++)
+                            for (var i = 0; i < kShellSections.length; i++)
                               SizedBox(
                                 width: w,
                                 height: h,
-                                child: _DraggableSection(
+                                child: DraggableSection(
                                   index: i,
-                                  child: _SectionTile(
-                                    section: _sections[i],
+                                  child: SectionTile(
+                                    section: kShellSections[i],
                                     selected: i == _index,
                                     onTap: () => _goTo(i),
                                     fill: true,
@@ -496,7 +418,7 @@ class _RootShellState extends State<RootShell> {
                           children: [...prev, ?cur],
                         ),
                         child: Text(
-                          _sections[_index].item.label,
+                          kShellSections[_index].item.label,
                           key: ValueKey(_index),
                           style: const TextStyle(
                             fontSize: 22,
@@ -507,7 +429,8 @@ class _RootShellState extends State<RootShell> {
                         ),
                       ),
                     ),
-                    if (_index != 3) _contactButton(),
+                    if (_index != NavigationCubit.contactIndex)
+                      _contactButton(),
                   ],
                 ),
               ),
@@ -536,7 +459,7 @@ class _RootShellState extends State<RootShell> {
                               ),
                               alignment: Alignment.center,
                               child: Text(
-                                'Drop to open ${_sections[candidates.first ?? 0].item.label}',
+                                'Drop to open ${kShellSections[candidates.first ?? 0].item.label}',
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -555,206 +478,6 @@ class _RootShellState extends State<RootShell> {
         );
         return Material(color: Colors.white, child: content);
       },
-    );
-  }
-}
-
-/// Long-press a section and drag it across the fold into the content pane.
-class _DraggableSection extends StatelessWidget {
-  const _DraggableSection({required this.index, required this.child});
-
-  final int index;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return LongPressDraggable<int>(
-      data: index,
-      hapticFeedbackOnStart: true,
-      feedback: Material(
-        color: Colors.transparent,
-        elevation: 14,
-        shadowColor: const Color(0x55000000),
-        borderRadius: BorderRadius.circular(18),
-        child: SizedBox(
-          width: 260,
-          child: Opacity(
-            opacity: 0.92,
-            child: _SectionTile(
-              section: _sections[index],
-              selected: true,
-              onTap: () {},
-            ),
-          ),
-        ),
-      ),
-      childWhenDragging: Opacity(opacity: 0.35, child: child),
-      child: child,
-    );
-  }
-}
-
-class _SectionList extends StatelessWidget {
-  const _SectionList({required this.selected, required this.onSelected});
-
-  final int selected;
-  final ValueChanged<int> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 16),
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 14),
-          child: Text(
-            'Explore',
-            style: t.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ),
-        for (var i = 0; i < _sections.length; i++) ...[
-          _DraggableSection(
-            index: i,
-            child: _SectionTile(
-              section: _sections[i],
-              selected: i == selected,
-              onTap: () => onSelected(i),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-        const SizedBox(height: 4),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 4),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: EdgeInsets.only(top: 1),
-                child: Icon(
-                  Icons.open_with_rounded,
-                  size: 14,
-                  color: MfColors.slate400,
-                ),
-              ),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Long-press a section and drag it across the fold to open it.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: MfColors.slate400,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _SectionTile extends StatelessWidget {
-  const _SectionTile({
-    required this.section,
-    required this.selected,
-    required this.onTap,
-    this.fill = false,
-  });
-
-  final _Section section;
-  final bool selected;
-  final VoidCallback onTap;
-
-  /// Fills its parent box (tabletop control deck) instead of sizing to text.
-  final bool fill;
-
-  @override
-  Widget build(BuildContext context) {
-    final fg = selected ? Colors.white : MfColors.slate900;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-      decoration: BoxDecoration(
-        color: selected ? MfColors.slate900 : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: selected ? MfColors.slate900 : const Color(0xFFE2E8F0),
-        ),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 14,
-              vertical: fill ? 10 : 14,
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? Colors.white.withValues(alpha: 0.12)
-                        : MfColors.blue50,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    selected ? section.item.selectedIcon : section.item.icon,
-                    color: selected ? Colors.white : MfColors.blue600,
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        section.item.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: fg,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        section.subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: selected
-                              ? const Color(0xFFCBD5E1)
-                              : MfColors.slate500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: selected ? Colors.white : MfColors.slate400,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

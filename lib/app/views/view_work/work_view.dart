@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-
-import '../data/site_content.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common.dart';
-import '../widgets/links.dart';
+import 'package:hello_flutter/app/models/site_content.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/widgets/common.dart';
+import 'package:hello_flutter/app/widgets/links.dart';
 
 const _kRadius = 20.0;
 const _kBorder = Color(0xFFE2E8F0);
 
-class WorkScreen extends StatelessWidget {
-  const WorkScreen({super.key});
+/// Work section: clients, Academy and open source.
+class WorkView extends StatelessWidget {
+  /// Creates the work view.
+  const WorkView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -122,11 +123,7 @@ class _ClientCard extends StatelessWidget {
                   color: MfColors.slate50,
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Image.asset(
-                  client.asset,
-                  fit: BoxFit.contain,
-                  filterQuality: FilterQuality.medium,
-                ),
+                child: Image.asset(client.asset, fit: BoxFit.contain),
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(6, 12, 4, 4),

@@ -2,17 +2,24 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
 
-import '../theme/app_theme.dart';
-
+/// A navigation destination: icons and label.
 class PillNavItem {
+  /// Creates a destination.
   const PillNavItem({
     required this.icon,
     required this.selectedIcon,
     required this.label,
   });
+
+  /// Icon when not selected.
   final IconData icon;
+
+  /// Icon when selected.
   final IconData selectedIcon;
+
+  /// Destination label.
   final String label;
 }
 
@@ -20,6 +27,7 @@ class PillNavItem {
 /// frosted translucent background, hairline border, soft shadow, and an
 /// animated pill that slides and morphs behind the selected tab.
 class PillNavBar extends StatelessWidget {
+  /// Creates the bar for [items].
   const PillNavBar({
     super.key,
     required this.items,
@@ -27,12 +35,22 @@ class PillNavBar extends StatelessWidget {
     required this.onSelected,
   });
 
+  /// Destinations.
   final List<PillNavItem> items;
+
+  /// Index of the selected destination.
   final int selectedIndex;
+
+  /// Called with the tapped destination index.
   final ValueChanged<int> onSelected;
 
+  /// Bar height.
   static const double barHeight = 64;
+
+  /// Horizontal margin from the screen edges.
   static const double sideMargin = 20;
+
+  /// Gap above the bottom safe area.
   static const double bottomGap = 10;
   static const _duration = Duration(milliseconds: 250);
   static const _curve = Curves.easeOutCubic;
@@ -73,10 +91,7 @@ class PillNavBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white.withValues(alpha: 0.72),
                 borderRadius: BorderRadius.circular(barHeight / 2),
-                border: Border.all(
-                  color: Colors.white.withValues(alpha: 0.9),
-                  width: 1,
-                ),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.9)),
               ),
               child: LayoutBuilder(
                 builder: (context, constraints) {

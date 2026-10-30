@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-
-import '../theme/app_theme.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
 
 /// The MasterFabric mark + two-line wordmark, as in the site header.
 class MfWordmark extends StatelessWidget {
+  /// Creates the wordmark.
   const MfWordmark({super.key, this.dark = false});
 
+  /// Use the light-on-dark variant.
   final bool dark;
 
   @override

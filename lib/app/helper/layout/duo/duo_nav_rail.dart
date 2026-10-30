@@ -3,10 +3,9 @@ import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
-import '../theme/app_theme.dart';
-import '../widgets/pill_nav_bar.dart';
-import 'fold_info.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/widgets/pill_nav_bar.dart';
 
 /// The iPhone Duo navbar: a vertical, frosted capsule that runs along the
 /// side of the opened inner display.
@@ -16,6 +15,7 @@ import 'fold_info.dart';
 /// (Flutter-drawn) navigation. It shares the [PillNavBar] look: a dark pill
 /// slides between items and grows to show the selected label.
 class DuoNavRail extends StatelessWidget {
+  /// Creates a rail for [items] with [selectedIndex].
   const DuoNavRail({
     super.key,
     required this.items,
@@ -24,15 +24,25 @@ class DuoNavRail extends StatelessWidget {
     this.footer,
   });
 
+  /// Sections shown in the rail.
   final List<PillNavItem> items;
+
+  /// Index of the selected item.
   final int selectedIndex;
+
+  /// Called with the tapped item index.
   final ValueChanged<int> onSelected;
 
   /// Optional widget under the items (e.g. the live [HingeGlyph]).
   final Widget? footer;
 
+  /// Rail width in logical pixels.
   static const double width = 76;
+
+  /// Height of an unselected item.
   static const double itemHeight = 58;
+
+  /// Height of the selected item.
   static const double selectedHeight = 76;
   static const _duration = Duration(milliseconds: 260);
   static const _curve = Curves.easeOutCubic;
@@ -199,11 +209,16 @@ class _RailItem extends StatelessWidget {
 /// Live hinge indicator: two panels drawn at the current hinge angle
 /// (from `UIHingeInteraction`), with the posture name underneath.
 class HingeGlyph extends StatelessWidget {
+  /// Creates a glyph for [fold].
   const HingeGlyph({super.key, required this.fold, this.showLabel = true});
 
+  /// Posture to draw.
   final FoldInfo fold;
+
+  /// Whether to show the posture label next to the glyph.
   final bool showLabel;
 
+  /// Human-readable label for the posture of [f].
   static String postureLabel(FoldInfo f) => switch (f.posture) {
     DuoPosture.flat => 'Flat',
     DuoPosture.book => 'Book',

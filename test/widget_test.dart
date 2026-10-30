@@ -3,13 +3,12 @@ import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:hello_flutter/duo/duo_bridge.dart';
-import 'package:hello_flutter/duo/dual_pane_layout.dart';
-import 'package:hello_flutter/duo/duo_nav_rail.dart';
-import 'package:hello_flutter/duo/fold_info.dart';
-import 'package:hello_flutter/main.dart';
-import 'package:hello_flutter/widgets/pill_nav_bar.dart';
+import 'package:hello_flutter/app/app.dart';
+import 'package:hello_flutter/app/helper/layout/duo/dual_pane_layout.dart';
+import 'package:hello_flutter/app/helper/layout/duo/duo_bridge.dart';
+import 'package:hello_flutter/app/helper/layout/duo/duo_nav_rail.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
+import 'package:hello_flutter/app/widgets/pill_nav_bar.dart';
 
 void main() {
   tearDown(() => DuoBridge.instance.debugSet(FoldInfo.none));

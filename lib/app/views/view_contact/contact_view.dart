@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:hello_flutter/app/models/site_content.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
+import 'package:hello_flutter/app/widgets/common.dart';
+import 'package:hello_flutter/app/widgets/links.dart';
+import 'package:hello_flutter/app/widgets/mf_logo.dart';
 
-import '../data/site_content.dart';
-import '../theme/app_theme.dart';
-import '../widgets/common.dart';
-import '../widgets/links.dart';
-import '../widgets/mf_logo.dart';
-
-class AboutContactScreen extends StatelessWidget {
-  const AboutContactScreen({super.key});
+/// Contact section: legal info, hours and links.
+class ContactView extends StatelessWidget {
+  /// Creates the contact view.
+  const ContactView({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +61,7 @@ class AboutContactScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _InfoRow(
+                const _InfoRow(
                   Icons.location_on_outlined,
                   'Office',
                   SiteContent.address,

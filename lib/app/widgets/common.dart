@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:hello_flutter/app/models/site_content.dart';
+import 'package:hello_flutter/app/theme/app_theme.dart';
 
-import '../data/site_content.dart';
-import '../theme/app_theme.dart';
-
+/// Horizontal padding of every page.
 const kPagePadding = EdgeInsets.symmetric(horizontal: 20);
 
 /// Page side padding: the 20pt page margin plus any horizontal safe area
@@ -16,6 +16,7 @@ EdgeInsets pagePadding(BuildContext context) {
 
 /// Small rounded label, like the site's "AI & Agentic" eyebrow chips.
 class Eyebrow extends StatelessWidget {
+  /// Creates an eyebrow label.
   const Eyebrow(
     this.text, {
     super.key,
@@ -23,8 +24,13 @@ class Eyebrow extends StatelessWidget {
     this.background = MfColors.blue50,
   });
 
+  /// Label text.
   final String text;
+
+  /// Text color.
   final Color color;
+
+  /// Pill background color.
   final Color background;
 
   @override
@@ -47,7 +53,9 @@ class Eyebrow extends StatelessWidget {
   }
 }
 
+/// Eyebrow, title and optional body of a page section.
 class SectionHeader extends StatelessWidget {
+  /// Creates a section header.
   const SectionHeader({
     super.key,
     this.eyebrow,
@@ -55,8 +63,13 @@ class SectionHeader extends StatelessWidget {
     this.body,
   });
 
+  /// Optional small label above the title.
   final String? eyebrow;
+
+  /// Section title.
   final String title;
+
+  /// Optional paragraph under the title.
   final String? body;
 
   @override
@@ -76,10 +89,15 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
+/// Card showing a [Feature].
 class FeatureCard extends StatelessWidget {
+  /// Creates a card for [feature].
   const FeatureCard(this.feature, {super.key, this.accent = MfColors.blue600});
 
+  /// Feature to show.
   final Feature feature;
+
+  /// Icon accent color.
   final Color accent;
 
   @override
@@ -118,7 +136,9 @@ class FeatureCard extends StatelessWidget {
   }
 }
 
+/// Timeline tile for a [ProcessStep].
 class StepTile extends StatelessWidget {
+  /// Creates a tile for [step].
   const StepTile(
     this.step, {
     super.key,
@@ -126,8 +146,13 @@ class StepTile extends StatelessWidget {
     this.isLast = false,
   });
 
+  /// Step to show.
   final ProcessStep step;
+
+  /// Number badge color.
   final Color accent;
+
+  /// Whether this is the last step (no connector line).
   final bool isLast;
 
   @override
@@ -186,10 +211,15 @@ class StepTile extends StatelessWidget {
   }
 }
 
+/// Wrapping row of tag chips.
 class TagWrap extends StatelessWidget {
+  /// Creates chips for [tags].
   const TagWrap(this.tags, {super.key, this.dark = false});
 
+  /// Tag labels.
   final List<String> tags;
+
+  /// Use the dark chip style.
   final bool dark;
 
   @override
@@ -226,8 +256,12 @@ class TagWrap extends StatelessWidget {
   }
 }
 
+/// Square spacer of [size].
 class Gap extends StatelessWidget {
+  /// Creates a gap.
   const Gap(this.size, {super.key});
+
+  /// Width and height of the gap.
   final double size;
   @override
   Widget build(BuildContext context) => SizedBox(height: size);

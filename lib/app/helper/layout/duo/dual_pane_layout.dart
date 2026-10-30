@@ -2,8 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureState, DisplayFeatureType;
 
 import 'package:flutter/widgets.dart';
-
-import 'fold_info.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
 
 /// How the two panes are arranged relative to the fold.
 enum PaneAxis {
@@ -15,21 +14,40 @@ enum PaneAxis {
 }
 
 /// Where the dual-pane decision came from (shown in the debug caption).
-enum LayoutSource { single, displayFeature, reservedRegion, breakpoint }
+enum LayoutSource {
+  /// One pane.
+  single,
+
+  /// Flutter `DisplayFeature` (hinge / fold).
+  displayFeature,
+
+  /// Native `reservedRegions(kind: .division)` from the Duo bridge.
+  reservedRegion,
+
+  /// Width breakpoint fallback.
+  breakpoint,
+}
+
+/// Where the app splits into two panes, and why.
 
 @immutable
 class DualPaneGeometry {
   const DualPaneGeometry._(this.source, this.axis, this.hinge);
 
+  /// No split: one full-screen pane.
   const DualPaneGeometry.single()
     : this._(LayoutSource.single, PaneAxis.horizontal, Rect.zero);
 
+  /// What produced this geometry.
   final LayoutSource source;
+
+  /// Whether panes sit side by side or stacked.
   final PaneAxis axis;
 
   /// Area the content must avoid (fold, hinge or centre gutter), in view coordinates.
   final Rect hinge;
 
+  /// Whether the app shows two panes.
   bool get isDual => source != LayoutSource.single;
 
   /// Minimum width (logical px) before a fold-less screen is treated as an
@@ -123,6 +141,7 @@ class DualPaneGeometry {
 /// padding of its own edges, and no display features) so descendants like
 /// dialogs or the pill bar lay out for one screen only.
 class DualPane extends StatelessWidget {
+  /// Creates the two-pane layout for [geometry].
   const DualPane({
     super.key,
     required this.geometry,
@@ -132,6 +151,7 @@ class DualPane extends StatelessWidget {
     this.occlusions = const [],
   });
 
+  /// Split geometry from [DualPaneGeometry.resolve].
   final DualPaneGeometry geometry;
 
   /// Leading (left) or bottom pane: navigation.
@@ -139,6 +159,8 @@ class DualPane extends StatelessWidget {
 
   /// Trailing (right) or top pane: content.
   final Widget secondary;
+
+  /// Fill painted over the hinge gap.
   final Color hingeColor;
 
   /// Active camera housings (UIKit `.occlusion` regions) in view coordinates;

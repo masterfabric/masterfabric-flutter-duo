@@ -3,8 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
-
-import 'fold_info.dart';
+import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
 
 /// Listens to the native `masterfabric/duo` channel (see ios/Runner/AppDelegate.swift).
 ///
@@ -13,14 +12,18 @@ import 'fold_info.dart';
 class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
   DuoBridge._();
 
+  /// Process-wide bridge instance.
   static final DuoBridge instance = DuoBridge._();
   static const _channel = MethodChannel('masterfabric/duo');
 
   FoldInfo _info = FoldInfo.none;
+
+  /// Latest posture reported by the native side.
   FoldInfo get info => _info;
 
   bool _started = false;
 
+  /// Installs the channel handler and fetches the first state. iOS only; idempotent.
   void start() {
     if (_started) return;
     _started = true;
@@ -45,6 +48,7 @@ class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
     Future<void>.delayed(const Duration(milliseconds: 400), refresh);
   }
 
+  /// Asks the native side for the current state (`getState`).
   Future<void> refresh() async {
     try {
       _apply(await _channel.invokeMethod<Object?>('getState'));
@@ -54,6 +58,8 @@ class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
       // Ignore: fall back to Flutter display features / breakpoints.
     }
   }
+
+  /// Overrides [info] in tests.
 
   @visibleForTesting
   void debugSet(FoldInfo info) => _setInfo(info);
@@ -66,6 +72,8 @@ class DuoBridge extends ChangeNotifier with WidgetsBindingObserver {
   /// Whether the native UIKit tab bar is currently the app's navigation
   /// (iPhone Duo closed: UIKit renders it in the system vertical bar).
   bool get nativeTabsShown => _nativeTabsShown;
+
+  /// Overrides [nativeTabsShown] in tests.
 
   @visibleForTesting
   void debugSetNativeTabsShown(bool shown) {
