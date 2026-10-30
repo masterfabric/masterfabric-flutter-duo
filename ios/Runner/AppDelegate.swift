@@ -24,7 +24,8 @@ import UIKit
 /// iPhone Duo we read UIKit's reserved regions (iOS 27.1 SDK+):
 ///   - `.division`  -> the folding region (active only while partially open)
 ///   - `.occlusion` -> camera housings
-/// plus the hinge status/angle from `UIHingeInteraction`.
+/// plus the hinge status/angle from `UIHingeInteraction` and the
+/// `UITraitCollection.verticalBarEdge` trait.
 /// Channel `masterfabric/duo`: Dart calls `getState`, native pushes `update`.
 final class DuoBridgePlugin: NSObject, FlutterPlugin {
   private let channel: FlutterMethodChannel
@@ -113,6 +114,13 @@ final class DuoBridgePlugin: NSObject, FlutterPlugin {
       }
       state["divisions"] = encode(view.reservedRegions(kind: .division, options: .includeInactive))
       state["occlusions"] = encode(view.reservedRegions(kind: .occlusion))
+      // Edge where UIKit places its vertical bar (status bar / toolbars) on
+      // iPhone Duo; Flutter draws its own navbar on the opposite side.
+      switch view.traitCollection.verticalBarEdge {
+      case .leading: state["verticalBarEdge"] = "leading"
+      case .trailing: state["verticalBarEdge"] = "trailing"
+      default: state["verticalBarEdge"] = "unspecified"
+      }
     }
     return state
   }

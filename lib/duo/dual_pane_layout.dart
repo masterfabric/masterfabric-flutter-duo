@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureState, DisplayFeatureType;
 
 import 'package:flutter/widgets.dart';
@@ -40,8 +41,10 @@ class DualPaneGeometry {
   /// enough height for the section content.
   static const double minDualHeight = 600;
 
-  /// Gutter left around the centre crease when no fold region is reported.
-  static const double centreGutter = 24;
+  /// Hairline seam drawn at the crease when the device is open flat. Apple:
+  /// the division is inactive (zero width) when fully open, so content may
+  /// run right up to the centre; only an active fold needs a real gap.
+  static const double seam = 1;
 
   /// Order of precedence:
   /// 1. Flutter `MediaQuery.displayFeatures` (hinge / separating fold). Today
@@ -77,11 +80,20 @@ class DualPaneGeometry {
     if (size.width >= breakpoint &&
         size.height >= minDualHeight &&
         size.width > size.height) {
-      final cx = size.width / 2;
+      // Split exactly where the (inactive) division sits so nothing jumps
+      // sideways when the person starts folding the device.
+      final d = fold.anyDivision;
+      final cx =
+          d != null &&
+              d.height >= d.width &&
+              d.center.dx > 0 &&
+              d.center.dx < size.width
+          ? d.center.dx
+          : size.width / 2;
       return DualPaneGeometry._(
         LayoutSource.breakpoint,
         PaneAxis.horizontal,
-        Rect.fromLTWH(cx - centreGutter / 2, 0, centreGutter, size.height),
+        Rect.fromLTWH(cx - seam / 2, 0, seam, size.height),
       );
     }
     return const DualPaneGeometry.single();
@@ -117,6 +129,7 @@ class DualPane extends StatelessWidget {
     required this.primary,
     required this.secondary,
     this.hingeColor = const Color(0x00000000),
+    this.occlusions = const [],
   });
 
   final DualPaneGeometry geometry;
@@ -128,24 +141,29 @@ class DualPane extends StatelessWidget {
   final Widget secondary;
   final Color hingeColor;
 
+  /// Active camera housings (UIKit `.occlusion` regions) in view coordinates;
+  /// each pane pads itself away from the ones it overlaps.
+  final List<Rect> occlusions;
+
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
     final size = mq.size;
     final h = geometry.hinge;
 
-    Widget pane(Widget child, Size paneSize, EdgeInsets keep) {
+    Widget pane(Widget child, Offset origin, Size paneSize, EdgeInsets keep) {
       EdgeInsets clip(EdgeInsets e) => EdgeInsets.fromLTRB(
         keep.left > 0 ? e.left : 0,
         keep.top > 0 ? e.top : 0,
         keep.right > 0 ? e.right : 0,
         keep.bottom > 0 ? e.bottom : 0,
       );
+      final occ = occlusionInsets(origin & paneSize, occlusions);
       return MediaQuery(
         data: mq.copyWith(
           size: paneSize,
-          padding: clip(mq.padding),
-          viewPadding: clip(mq.viewPadding),
+          padding: maxInsets(clip(mq.padding), occ),
+          viewPadding: maxInsets(clip(mq.viewPadding), occ),
           viewInsets: clip(mq.viewInsets),
           displayFeatures: const [],
         ),
@@ -164,6 +182,7 @@ class DualPane extends StatelessWidget {
         children: [
           pane(
             primary,
+            Offset.zero,
             Size(leftW, size.height),
             const EdgeInsets.fromLTRB(1, 1, 0, 1),
           ),
@@ -173,6 +192,7 @@ class DualPane extends StatelessWidget {
           ),
           pane(
             secondary,
+            Offset(size.width - rightW, 0),
             Size(rightW, size.height),
             const EdgeInsets.fromLTRB(0, 1, 1, 1),
           ),
@@ -185,6 +205,7 @@ class DualPane extends StatelessWidget {
       children: [
         pane(
           secondary,
+          Offset.zero,
           Size(size.width, topH),
           const EdgeInsets.fromLTRB(1, 1, 1, 0),
         ),
@@ -194,6 +215,7 @@ class DualPane extends StatelessWidget {
         ),
         pane(
           primary,
+          Offset(0, size.height - bottomH),
           Size(size.width, bottomH),
           const EdgeInsets.fromLTRB(1, 0, 1, 1),
         ),
@@ -201,3 +223,37 @@ class DualPane extends StatelessWidget {
     );
   }
 }
+
+/// Insets that keep content inside [pane] clear of the [occlusions] it
+/// overlaps (e.g. the iPhone Duo camera housings). Each overlapping region
+/// pushes in the pane edge it is closest to.
+EdgeInsets occlusionInsets(Rect pane, Iterable<Rect> occlusions) {
+  var l = 0.0, t = 0.0, r = 0.0, b = 0.0;
+  for (final o in occlusions) {
+    final i = pane.intersect(o);
+    if (i.width <= 0 || i.height <= 0) continue;
+    final dTop = i.top - pane.top;
+    final dBottom = pane.bottom - i.bottom;
+    final dLeft = i.left - pane.left;
+    final dRight = pane.right - i.right;
+    final m = [dTop, dBottom, dLeft, dRight].reduce(math.min);
+    if (m == dTop) {
+      t = math.max(t, i.bottom - pane.top);
+    } else if (m == dBottom) {
+      b = math.max(b, pane.bottom - i.top);
+    } else if (m == dLeft) {
+      l = math.max(l, i.right - pane.left);
+    } else {
+      r = math.max(r, pane.right - i.left);
+    }
+  }
+  return EdgeInsets.fromLTRB(l, t, r, b);
+}
+
+/// Component-wise maximum of two insets.
+EdgeInsets maxInsets(EdgeInsets a, EdgeInsets b) => EdgeInsets.fromLTRB(
+  math.max(a.left, b.left),
+  math.max(a.top, b.top),
+  math.max(a.right, b.right),
+  math.max(a.bottom, b.bottom),
+);

@@ -5,6 +5,28 @@ import 'package:flutter/foundation.dart';
 /// Hinge status as reported by UIKit's `UIHinge.Status` (iOS 27.1+).
 enum HingeStatus { none, unknown, closed, partiallyOpen, fullyOpen }
 
+/// `UITraitCollection.verticalBarEdge` (iOS 27.1+): the edge where the
+/// system places its vertical bar (status bar / toolbars) on iPhone Duo.
+enum VerticalBarEdge { unspecified, leading, trailing }
+
+/// How the opened device is being held, derived from the hinge and fold.
+enum DuoPosture {
+  /// No hinge information (slab iPhone, simulator without hinge, tests).
+  unknown,
+
+  /// Opened and laid flat (`UIHinge.Status.fullyOpen`).
+  flat,
+
+  /// Partially open with a vertical fold: side-by-side panes like a book.
+  book,
+
+  /// Partially open with a horizontal fold: laptop / tabletop posture.
+  tabletop,
+
+  /// Closed: the app runs on the outer display.
+  closed,
+}
+
 /// A UIKit reserved region (`UIView.ReservedRegion`), in logical pixels
 /// relative to the Flutter view.
 @immutable
@@ -40,6 +62,7 @@ class FoldInfo {
     this.angle = -1,
     this.divisions = const [],
     this.occlusions = const [],
+    this.verticalBarEdge = VerticalBarEdge.unspecified,
   });
 
   /// True when the native side runs on iOS 27.1+ (reserved-region APIs exist).
@@ -50,6 +73,9 @@ class FoldInfo {
   final double angle;
   final List<ReservedRegion> divisions;
   final List<ReservedRegion> occlusions;
+
+  /// Where UIKit puts its vertical bar; app chrome goes on the other side.
+  final VerticalBarEdge verticalBarEdge;
 
   static const none = FoldInfo();
 
@@ -68,6 +94,32 @@ class FoldInfo {
     return null;
   }
 
+  /// Camera housings that currently cover the view (the inner camera is only
+  /// active while in use; the outer camera always is).
+  Iterable<Rect> get activeOcclusions =>
+      occlusions.where((o) => o.active && !o.rect.isEmpty).map((o) => o.rect);
+
+  /// The fold position even while it is inactive (zero width when flat).
+  /// Apple recommends using inactive regions to avoid layout jumps when the
+  /// device starts to fold.
+  Rect? get anyDivision => divisions.isEmpty ? null : divisions.first.rect;
+
+  DuoPosture get posture {
+    switch (hinge) {
+      case HingeStatus.closed:
+        return DuoPosture.closed;
+      case HingeStatus.fullyOpen:
+        return DuoPosture.flat;
+      case HingeStatus.partiallyOpen:
+        final f = activeFold;
+        if (f != null && f.width > f.height) return DuoPosture.tabletop;
+        return DuoPosture.book;
+      case HingeStatus.none:
+      case HingeStatus.unknown:
+        return DuoPosture.unknown;
+    }
+  }
+
   factory FoldInfo.fromMap(Map<Object?, Object?> m) {
     List<ReservedRegion> regions(Object? raw) => raw is List
         ? raw.map(ReservedRegion.fromMap).whereType<ReservedRegion>().toList()
@@ -81,6 +133,10 @@ class FoldInfo {
       angle: (m['angle'] as num?)?.toDouble() ?? -1,
       divisions: regions(m['divisions']),
       occlusions: regions(m['occlusions']),
+      verticalBarEdge: VerticalBarEdge.values.firstWhere(
+        (e) => e.name == m['verticalBarEdge'],
+        orElse: () => VerticalBarEdge.unspecified,
+      ),
     );
   }
 
@@ -91,7 +147,8 @@ class FoldInfo {
       other.hinge == hinge &&
       (other.angle - angle).abs() < 1 &&
       listEquals(other.divisions, divisions) &&
-      listEquals(other.occlusions, occlusions);
+      listEquals(other.occlusions, occlusions) &&
+      other.verticalBarEdge == verticalBarEdge;
 
   @override
   int get hashCode => Object.hash(
@@ -100,5 +157,6 @@ class FoldInfo {
     angle.round(),
     Object.hashAll(divisions),
     Object.hashAll(occlusions),
+    verticalBarEdge,
   );
 }
