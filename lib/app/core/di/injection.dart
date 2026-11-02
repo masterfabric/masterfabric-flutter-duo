@@ -1,8 +1,8 @@
 import 'dart:io' show Platform;
 
 import 'package:get_it/get_it.dart';
-import 'package:hello_flutter/app/core/bloc/duo/duo_cubit.dart';
-import 'package:hello_flutter/app/core/bloc/navigation/navigation_cubit.dart';
+import 'package:hello_flutter/app/core/bloc/duo/duo_bloc.dart';
+import 'package:hello_flutter/app/core/bloc/navigation/navigation_bloc.dart';
 import 'package:hello_flutter/app/helper/layout/duo/duo_bridge.dart';
 
 /// Service locator, as in masterfabric_core's `di/` (GetIt).
@@ -13,9 +13,9 @@ void configureDependencies() {
   if (getIt.isRegistered<DuoBridge>()) return;
   getIt
     ..registerSingleton<DuoBridge>(DuoBridge.instance)
-    ..registerFactory<DuoCubit>(() => DuoCubit(bridge: getIt<DuoBridge>()))
-    ..registerFactory<NavigationCubit>(
-      () => NavigationCubit(
+    ..registerFactory<DuoBloc>(() => DuoBloc(bridge: getIt<DuoBridge>()))
+    ..registerFactory<NavigationBloc>(
+      () => NavigationBloc(
         bridge: getIt<DuoBridge>(),
         initialIndex: initialSectionIndex(),
       ),
@@ -29,6 +29,6 @@ int initialSectionIndex() {
   final raw = defined.isNotEmpty ? defined : Platform.environment['MF_TAB'];
   return (int.tryParse(raw ?? '') ?? 0).clamp(
     0,
-    NavigationCubit.sectionCount - 1,
+    NavigationBloc.sectionCount - 1,
   );
 }

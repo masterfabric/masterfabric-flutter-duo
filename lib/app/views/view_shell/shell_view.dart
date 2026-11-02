@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hello_flutter/app/core/bloc/duo/duo_cubit.dart';
+import 'package:hello_flutter/app/core/bloc/duo/duo_bloc.dart';
 import 'package:hello_flutter/app/core/bloc/duo/duo_state.dart';
-import 'package:hello_flutter/app/core/bloc/navigation/navigation_cubit.dart';
+import 'package:hello_flutter/app/core/bloc/navigation/navigation_bloc.dart';
 import 'package:hello_flutter/app/helper/layout/duo/dual_pane_layout.dart';
 import 'package:hello_flutter/app/helper/layout/duo/duo_nav_rail.dart';
 import 'package:hello_flutter/app/helper/layout/duo/fold_info.dart';
@@ -19,7 +19,7 @@ import 'package:hello_flutter/app/widgets/pill_nav_bar.dart';
 
 /// The app shell: picks the navigation for the current iPhone Duo posture
 /// (native side tab bar, pill bar, section list or tabletop deck) and shows
-/// the selected section. State lives in [NavigationCubit] and [DuoCubit].
+/// the selected section. State lives in [NavigationBloc] and [DuoBloc].
 class ShellView extends StatefulWidget {
   /// Creates the shell.
   const ShellView({super.key});
@@ -29,22 +29,25 @@ class ShellView extends StatefulWidget {
 }
 
 class _ShellViewState extends State<ShellView> {
-  int get _index => context.read<NavigationCubit>().state.index;
+  int get _index => context.read<NavigationBloc>().state.index;
 
-  void _goTo(int i) => context.read<NavigationCubit>().select(i);
+  void _goTo(int i) =>
+      context.read<NavigationBloc>().add(NavigationSectionSelected(i));
 
   /// iPhone Duo closed: hand navigation to the native UIKit tab bar, which
   /// the system renders in its vertical bar on the outer display.
   void _syncNativeTabs(bool closed) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      context.read<DuoCubit>().syncNativeTabs(
-        tabs: [
-          for (final s in kShellSections)
-            (title: s.item.label, symbol: s.symbol),
-        ],
-        selected: _index,
-        visible: closed,
+      context.read<DuoBloc>().add(
+        DuoNativeTabsSyncRequested(
+          tabs: [
+            for (final s in kShellSections)
+              (title: s.item.label, symbol: s.symbol),
+          ],
+          selected: _index,
+          visible: closed,
+        ),
       );
     });
   }
@@ -78,7 +81,7 @@ class _ShellViewState extends State<ShellView> {
       PillNavBar(selectedIndex: _index, onSelected: _goTo, items: _items);
 
   Widget _contactButton() => FilledButton(
-    onPressed: () => _goTo(NavigationCubit.contactIndex),
+    onPressed: () => _goTo(NavigationBloc.contactIndex),
     style: FilledButton.styleFrom(
       visualDensity: VisualDensity.compact,
       padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -89,8 +92,8 @@ class _ShellViewState extends State<ShellView> {
   @override
   Widget build(BuildContext context) {
     // Rebuild on section changes and on posture / native tab bar changes.
-    context.watch<NavigationCubit>();
-    return BlocBuilder<DuoCubit, DuoState>(
+    context.watch<NavigationBloc>();
+    return BlocBuilder<DuoBloc, DuoState>(
       builder: (context, duo) {
         final fold = duo.info;
         final mq = MediaQuery.of(context);
@@ -146,7 +149,7 @@ class _ShellViewState extends State<ShellView> {
               titleSpacing: 20,
               title: const MfWordmark(),
               actions: [
-                if (_index != NavigationCubit.contactIndex) _contactButton(),
+                if (_index != NavigationBloc.contactIndex) _contactButton(),
               ],
               actionsPadding: const EdgeInsets.only(right: 20),
             ),
@@ -197,7 +200,7 @@ class _ShellViewState extends State<ShellView> {
       appBar: AppBar(
         titleSpacing: 20,
         title: const MfWordmark(),
-        actions: [if (_index != NavigationCubit.contactIndex) _contactButton()],
+        actions: [if (_index != NavigationBloc.contactIndex) _contactButton()],
         actionsPadding: const EdgeInsets.only(right: 20),
       ),
       body: _contentStack,
@@ -429,8 +432,7 @@ class _ShellViewState extends State<ShellView> {
                         ),
                       ),
                     ),
-                    if (_index != NavigationCubit.contactIndex)
-                      _contactButton(),
+                    if (_index != NavigationBloc.contactIndex) _contactButton(),
                   ],
                 ),
               ),
