@@ -23,7 +23,7 @@ You can use it as a reference for:
 
 - adapting one Flutter codebase to every iPhone Duo posture: closed, book, flat and tabletop;
 - handing navigation to the **native side tab bar** on the closed (outer) display, without giving up the Flutter view;
-- structuring a Flutter app with the [masterfabric_core](https://github.com/masterfabric-mobile/masterfabric_core) and [osmea](https://github.com/masterfabric-mobile/osmea) conventions: cubits, base view models and DI.
+- structuring a Flutter app with the [masterfabric_core](https://github.com/masterfabric-mobile/masterfabric_core) and [osmea](https://github.com/masterfabric-mobile/osmea) conventions: blocs with explicit events, base view models and DI.
 
 <p align="center">
   <img src="docs/screenshots/closed_home.png" width="190" alt="Home on the closed iPhone Duo with the system side tab bar">
@@ -154,7 +154,7 @@ Tech talks:
 
 The project mirrors two MasterFabric references:
 
-- [**masterfabric_core**](https://github.com/masterfabric-mobile/masterfabric_core): the `BaseViewModelCubit` with `stateChanger`, Equatable states, a `get_it` service locator, and helpers under `helper/`.
+- [**masterfabric_core**](https://github.com/masterfabric-mobile/masterfabric_core): its base view model pattern (here as `BaseViewModelBloc`, the Bloc counterpart of `BaseViewModelCubit`), Equatable events and states, a `get_it` service locator, and helpers under `helper/`.
 - [**osmea**](https://github.com/masterfabric-mobile/osmea): `lib/app/{core/bloc, views/view_<name>/{<name>_view.dart, models, widgets}, widgets}` and package imports.
 
 ```text
@@ -163,10 +163,10 @@ lib/
 └── app/
     ├── app.dart                      # MasterFabricApp: MultiBlocProvider + MaterialApp
     ├── core/
-    │   ├── base/base_view_model_cubit.dart
+    │   ├── base/base_view_model_bloc.dart
     │   ├── bloc/
-    │   │   ├── duo/{duo_cubit,duo_state}.dart              # posture + native tab bar
-    │   │   └── navigation/{navigation_cubit,navigation_state}.dart
+    │   │   ├── duo/{duo_bloc,duo_event,duo_state}.dart     # posture + native tab bar
+    │   │   └── navigation/{navigation_bloc,navigation_event,navigation_state}.dart
     │   └── di/injection.dart         # get_it registrations
     ├── helper/layout/duo/
     │   ├── duo_bridge.dart           # masterfabric/duo MethodChannel client
@@ -186,30 +186,30 @@ lib/
     │   └── view_contact/contact_view.dart
     └── widgets/                      # common, links, mf_logo, pill_nav_bar
 ios/Runner/AppDelegate.swift          # DuoBridgePlugin, NativeSideTabs, SideTabBarController
-test/                                 # widget, Duo layout and cubit tests
+test/                                 # widget, Duo layout and bloc tests
 ```
 
 ## State management
 
-App state lives in two cubits (`flutter_bloc`). Both extend `BaseViewModelCubit` and are registered in `get_it`.
+App state lives in two blocs (`flutter_bloc`). Both extend `BaseViewModelBloc`, change state only in `on<Event>` handlers, and are registered in `get_it`. Widgets dispatch events with `context.read<XBloc>().add(...)`.
 
-| Cubit | State | Source of truth |
-| --- | --- | --- |
-| `NavigationCubit` | `NavigationState(index)` | Taps from the pill bar, section list, tabletop deck, CTAs, drag-and-drop, **and the native side tab bar** (`tabSelected`) |
-| `DuoCubit` | `DuoState(info: FoldInfo, nativeTabsShown)` | `DuoBridge` (`update` pushes, `getState` on metrics changes, and the `setTabs` result) |
+| Bloc | Events | State | Source of truth |
+| --- | --- | --- | --- |
+| `NavigationBloc` | `NavigationSectionSelected(index)` | `NavigationState(index)` | Taps from the pill bar, section list, tabletop deck, CTAs, drag-and-drop, **and the native side tab bar** (`tabSelected`) |
+| `DuoBloc` | `DuoBridgeChanged(info, nativeTabsShown)`, `DuoNativeTabsSyncRequested(tabs, selected, visible)` | `DuoState(info: FoldInfo, nativeTabsShown)` | `DuoBridge` (`update` pushes, `getState` on metrics changes, and the `setTabs` result) |
 
 ```text
 UIHingeInteraction / reservedRegions / verticalBarEdge
         │  "update" (native → Dart)
         ▼
-   DuoBridge ──notifies──▶ DuoCubit ──▶ BlocBuilder<DuoCubit> in ShellView
+   DuoBridge ──notifies──▶ DuoBloc (DuoBridgeChanged) ──▶ BlocBuilder<DuoBloc> in ShellView
         ▲                                     │ picks the layout for the posture
         │ "setTabs" (Dart → native)           │
-        └──────── DuoCubit.syncNativeTabs ◀───┘ (closed + single pane ⇒ visible)
+        └── DuoBloc ◀ DuoNativeTabsSyncRequested ┘ (closed + single pane ⇒ visible)
 
-Native tab tap ─ "tabSelected" ─▶ DuoBridge.onNativeTabSelected ─▶ NavigationCubit.select
-Flutter nav taps ───────────────────────────────────────────────▶ NavigationCubit.select
-NavigationCubit ─▶ ShellView rebuilds ─▶ setTabs(selected) keeps the native bar in sync
+Native tab tap ─ "tabSelected" ─▶ DuoBridge.onNativeTabSelected ─▶ NavigationBloc ◀ NavigationSectionSelected
+Flutter nav taps ───────────────────────────────────────────────▶ NavigationBloc ◀ NavigationSectionSelected
+NavigationBloc ─▶ ShellView rebuilds ─▶ setTabs(selected) keeps the native bar in sync
 ```
 
 `ShellView` keeps only UI resources (page `GlobalKey`s for state continuity across fold and unfold); there is no `setState`-driven app state.
@@ -308,19 +308,21 @@ _channel.setMethodCallHandler((call) async {
       _apply(call.arguments);                      // → FoldInfo.fromMap → notifyListeners
     case 'tabSelected':
       final i = call.arguments;
-      if (i is int) onNativeTabSelected?.call(i);  // → NavigationCubit.select
+      if (i is int) onNativeTabSelected?.call(i);  // → NavigationBloc ◀ NavigationSectionSelected
   }
 });
 
 // ShellView: hand navigation to the native bar while the Duo is closed.
-context.read<DuoCubit>().syncNativeTabs(
-  tabs: [for (final s in kShellSections) (title: s.item.label, symbol: s.symbol)],
-  selected: navigationIndex,
-  visible: !geometry.isDual && fold.hinge == HingeStatus.closed,
+context.read<DuoBloc>().add(
+  DuoNativeTabsSyncRequested(
+    tabs: [for (final s in kShellSections) (title: s.item.label, symbol: s.symbol)],
+    selected: navigationIndex,
+    visible: !geometry.isDual && fold.hinge == HingeStatus.closed,
+  ),
 );
 ```
 
-`syncNativeTabs` de-duplicates identical calls, and Flutter keeps its own navigation until iOS confirms (`true`) that the native bar is showing. That way the app is never left without a navigation surface.
+`DuoBridge.syncNativeTabs` de-duplicates identical calls, and Flutter keeps its own navigation until iOS confirms (`true`) that the native bar is showing. That way the app is never left without a navigation surface.
 
 ## Running on the iPhone Duo simulator
 
@@ -341,12 +343,12 @@ flutter run -d <DUO_SIM_ID>
 
 ```bash
 flutter analyze   # strict: strict-casts/inference/raw-types, public_member_api_docs, package imports…
-flutter test      # widget + Duo layout + cubit tests
+flutter test      # widget + Duo layout + bloc tests
 ```
 
 - `test/widget_test.dart`: one nav per posture, the native tab bar hand-off, drag across the fold, tabletop.
 - `test/duo_layout_test.dart`: geometry from display features, reserved regions and breakpoints; occlusion insets; the rail fallback.
-- `test/cubit_test.dart`: `NavigationCubit` (clamping, selection, native taps, detaching on close) and `DuoCubit` (mirroring the bridge, closing).
+- `test/bloc_test.dart`: `NavigationBloc` (clamping, `NavigationSectionSelected`, native taps, detaching on close) and `DuoBloc` (mirroring the bridge, `DuoBridgeChanged`, `DuoNativeTabsSyncRequested`, closing).
 
 ## Limitations
 
